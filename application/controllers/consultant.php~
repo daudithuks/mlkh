@@ -1,0 +1,910 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+require_once("secure_area.php");
+class Consultant extends Secure_area {
+
+	function __construct($module_id="consultant")
+	{
+		parent::__construct($module_id);
+		$this->load->library('consultant_lib');
+		$this->session->set_userdata('clinic','general');
+		$this->session->set_userdata('consultation','consultant');
+	}
+
+	public function index()
+	{
+		$this->_reload();
+	}
+
+	function customer_search()
+	{
+		$suggestions = $this->Consultation->get_customer_search_suggestions_consultation($this->input->post('q'),$this->input->post('limit'));
+		echo implode("\n",$suggestions);
+	}
+	
+	function diagnosis_search()
+	{
+		$suggestions = $this->Consultation->get_diagnosis_search_suggestions_consultation($this->input->post('q'),$this->input->post('limit'));
+		echo implode("\n",$suggestions);
+	}
+	
+	function suggest_refer_doctor()
+	{
+		$department = 'Outpatient Clinics';		
+		$suggestions = $this->Consultation->get_refer_doctor_suggestions($this->input->post('q'),$department);
+		echo implode("\n",$suggestions);
+	}
+
+	function remove_customer()
+	{
+		$this->consultant_lib->delete_customer();
+		$this->_reload();
+	}
+
+	function select_customer($customer_id = 0)
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		$consultant_id = $person_info->person_id;
+		if ( !$customer_id )
+		{
+			if ( $this->input->post("customer") )
+			{ 
+				$customer_id = $this->input->post("customer");
+				$this->consultant_lib->set_customer($customer_id,$consultant_id);
+			}
+		}
+		
+		else 
+		{
+			if ($this->Customer->exists($customer_id)) 
+			{
+				$this->consultant_lib->set_customer($customer_id,$consultant_id);
+			}
+		}
+		
+		$this->_reload();
+	}
+
+	function _reload($data=array())
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		$consultant_id = $person_info->person_id;
+		$customer_id=$this->consultant_lib->get_customer();
+		
+		$data['diagnoses'] = $this->consultant_lib->get_diagnoses();
+		$data['complaints'] = $this->consultant_lib->get_complaints();
+		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+		$data['medical_history'] = $this->consultant_lib->get_medical_history();
+		$data['family_history'] = $this->consultant_lib->get_family_history();
+		$data['examination'] = $this->consultant_lib->get_examination();
+		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+		
+		$status = $this->Consultation->get_status($this->Consultation->returning($customer_id),$consultant_id);
+		if ($status==102 || $status==112 || $status==122) $data['lab_report'] = true;
+		if ($status==120 || $status==121 || $status==122) $data['xray_report'] = true;
+		if($this->Consultation->check_invoice($customer_id,"Lab")) $data['lab_request'] = false;
+		if($this->Consultation->check_invoice($customer_id,"X-Ray")) $data['xray_request'] = false;
+		
+		if($this->Consultation->referred($customer_id,$consultant_id)) { $data['referred'] =$this->Consultation->referred($customer_id,$consultant_id); }
+		if($this->Consultation->returned_referral($customer_id,$consultant_id)) { $data['returned_referrals'] =$this->Consultation->returned_referral($customer_id,$consultant_id); }
+		
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		//$data['diseases'] = $this->Customer->get_diseases();
+		$this->load->view("consultant/register",$data);
+	}
+	
+	function save_consultation()
+	{
+		$data['diagnoses']=$this->consultant_lib->get_diagnoses();
+		$patient_id=$this->consultant_lib->get_customer();
+		$consultant_id = $this->Employee->get_logged_in_employee_info()->person_id;
+		$encounter_status = "2";
+		
+		$data["complaints"] = $this->consultant_lib->get_complaints();
+		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+		$data['medical_history'] = $this->consultant_lib->get_medical_history();
+		$data['family_history'] = $this->consultant_lib->get_family_history();
+		$data['examination'] = $this->consultant_lib->get_examination();
+		//SAVE invoice to database
+		$data['consultation_id']=$this->Consultation->save($data['diagnoses'],$data["complaints"],$data['obst_gyn'],$data['medical_history'],$data['family_history'],$data['examination'],$patient_id, $encounter_status, $consultant_id);
+		
+		if ($data['consultation_id'] == '-1')
+		{
+			$data['error_message'] = 'Failed to save the consultation.';
+		}
+		$this->_reload();
+	}
+	
+	function save_complaints()
+	{
+		$cns = trim($this->input->post('cns'));
+		$ris = trim($this->input->post('ris'));
+		$cvs = trim($this->input->post('cvs'));
+		$git = trim($this->input->post('git'));
+		$mis = trim($this->input->post('mis'));
+		$dental = trim($this->input->post('dental'));
+		$eye = trim($this->input->post('eye'));
+		$ent = trim($this->input->post('ent'));
+		$genitalia = trim($this->input->post('genitalia'));
+		$obst_gyn = trim($this->input->post('obst_gyn'));
+		
+		$complaints = array(
+			"cns" => "$cns",
+			"ris" => "$ris",
+			"cvs" => "$cvs",
+			"git" => "$git",
+			"mis" => "$mis",
+			"dental" => "$dental",
+			"eye" => "$eye",
+			"ent" => "$ent",
+			"genitalia" => "$genitalia",
+			"obstetrics and gynaecology" => "$obst_gyn",
+		);
+		
+		$this->consultant_lib->set_complaints($complaints);
+	}
+	
+	function save_obst_gyn()
+	{
+		$parity = trim($this->input->post('parity'));
+		$gravida = trim($this->input->post('gravida'));
+		$lmp_start = trim($this->input->post('lmp_start'));
+		$lmp_end = trim($this->input->post('lmp_end'));
+		$menarche = trim($this->input->post('menarche'));
+		$menses = trim($this->input->post('menses'));
+		
+		$obst_gyn = array(
+			"parity" => "$parity",
+			"gravida" => "$gravida",
+			"lmp_start" => "$lmp_start",
+			"lmp_end" => "$lmp_end",
+			"menarche" => "$menarche",
+			"menses" => "$menses",
+		);
+		
+		$this->consultant_lib->set_obst_gyn($obst_gyn);
+	}
+	
+	function save_medical_history()
+	{
+		$previous_admission = trim($this->input->post('previous_admission'));
+		$medication = trim($this->input->post('medication'));
+		$allergies = trim($this->input->post('allergies'));
+		$chronic_illness = trim($this->input->post('chronic_illness'));
+		$previous_surgery = trim($this->input->post('previous_surgery'));
+		
+		$medical_history = array(
+			"previous_admission" => "$previous_admission",
+			"medication" => "$medication",
+			"allergies" => "$allergies",
+			"chronic_illness" => "$chronic_illness",
+			"previous_surgery" => "$previous_surgery",
+		);
+		
+		$this->consultant_lib->set_medical_history($medical_history);
+	}
+	
+	function save_family_history()
+	{
+		$occupation = trim($this->input->post('occupation'));
+		$alcohol = trim($this->input->post('alcohol'));
+		$cigarettes = trim($this->input->post('cigarettes'));
+		$familial_diseases = trim($this->input->post('familial_diseases'));
+		
+		$family_history = array(
+			"occupation" => "$occupation",
+			"alcohol" => "$alcohol",
+			"cigarettes" => "$cigarettes",
+			"familial_diseases" => "$familial_diseases",
+		);
+		
+		$this->consultant_lib->set_family_history($family_history);
+	}
+	
+	function save_examination()
+	{
+		$general = $this->input->post('general');
+		$cns = $this->input->post('cns');
+		$ris = $this->input->post('ris');
+		$cvs = $this->input->post('cvs');
+		$git = $this->input->post('git');
+		$gut = $this->input->post('gut');
+		$msk = $this->input->post('msk');
+		$skin = $this->input->post('skin');
+		$obst_gyn = $this->input->post('obst_gyn');
+		
+		/*$examination = array(
+			"general" => "$general",
+			"cns" => "$cns",
+			"ris" => "$ris",
+			"cvs" => "$cvs",
+			"git" => "$git",
+			"gut" => "$gut",
+			"msk" => "$msk",
+			"skin" => "$skin",
+			"obst_gyn" => "$obst_gyn",
+		);*/
+		$examination = $this->input->post();
+		
+		$this->consultant_lib->set_examination($examination);
+	}
+	
+	function cancel_consultation()
+    {
+    	$this->consultant_lib->clear_all();
+    	$this->_reload();
+
+    }
+	
+	function close_consultation()
+	{
+		$data['diagnoses']=$this->consultant_lib->get_diagnoses();
+		$patient_id=$this->consultant_lib->get_customer();
+		$consultant_id = $this->Employee->get_logged_in_employee_info()->person_id;
+		$encounter_status = "2";
+		
+		$data["complaints"] = $this->consultant_lib->get_complaints();
+		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+		$data['medical_history'] = $this->consultant_lib->get_medical_history();
+		$data['family_history'] = $this->consultant_lib->get_family_history();
+		$data['examination'] = $this->consultant_lib->get_examination();
+		//SAVE invoice to database
+		$consultation_id=$this->Consultation->save($data['diagnoses'],$data["complaints"],$data['obst_gyn'],$data['medical_history'],$data['family_history'],$data['examination'],$patient_id, $encounter_status, $consultant_id);
+		
+		$this->cancel_consultation();
+	}
+	
+	function discharge()
+	{
+		$data['diagnoses']=$this->consultant_lib->get_diagnoses();
+		$patient_id=$this->consultant_lib->get_customer();
+		$consultant_id = $this->Employee->get_logged_in_employee_info()->person_id;
+		$encounter_status = "5";
+		
+		$data["complaints"] = $this->consultant_lib->get_complaints();
+		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+		$data['medical_history'] = $this->consultant_lib->get_medical_history();
+		$data['family_history'] = $this->consultant_lib->get_family_history();
+		$data['examination'] = $this->consultant_lib->get_examination();
+		//SAVE invoice to database
+		$consultation_id=$this->Consultation->save($data['diagnoses'],$data["complaints"],$data['obst_gyn'],$data['medical_history'],$data['family_history'],$data['examination'],$patient_id, $encounter_status, $consultant_id);
+		
+		$this->Consultation->discharge($consultation_id,$patient_id,$consultant_id);
+		
+		$this->cancel_consultation();		
+	}
+
+	function add_diagnosis()
+	{
+		$data=array();
+		$diagnosis_code = $this->input->post("item");
+		
+		if(!$this->consultant_lib->add_diagnosis($diagnosis_code))
+		{
+			$data['error']='Unable to add diagnosis';
+		}
+		
+		$this->_reload($data);
+	}
+
+	function delete_diagnosis($line)
+	{
+		$this->consultant_lib->delete_diagnosis($line);
+		$this->_reload();
+	}
+	
+	function edit_diagnosis($line)
+	{
+		$primary = $this->input->post("primary");
+		$this->consultant_lib->edit_diagnosis($line,$primary);
+		$this->_reload();
+	}
+	
+	function refresh_diagnosis()
+	{
+		$data['diagnoses']=$this->consultant_lib->get_diagnoses();
+		$this->load->view("consultant/diagnosis",$data);
+	}
+	
+	function refresh_queue()
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		
+		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+		
+		$this->load->view("consultant/queue",$data);
+	}
+	
+	function refresh_summary()
+	{
+		$data['diagnoses'] = $this->consultant_lib->get_diagnoses();
+		$data['complaints'] = $this->consultant_lib->get_complaints();
+		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+		$data['medical_history'] = $this->consultant_lib->get_medical_history();
+		$data['family_history'] = $this->consultant_lib->get_family_history();
+		$data['examination'] = $this->consultant_lib->get_examination();
+		
+		$this->load->view("consultant/consultation_summary",$data);
+	}
+	
+	function lab_request($data=array())
+	{
+		$customer_id=$this->consultant_lib->get_customer();
+		$this->consultant_lib->get_lab_request($customer_id);
+		
+		$this->lab_request_form();
+	}
+	
+	function lab_request_form($data=array())
+	{
+		
+		$customer_id=$this->consultant_lib->get_customer();
+		
+		$data['lab_cart']=$this->consultant_lib->get_lab_cart();
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/lab_request",$data);
+	}
+	
+	function lab_item_search()
+	{
+		$suggestions = $this->Item->get_item_search_suggestions_lab($this->input->post('q'),$this->input->post('limit'));
+		echo implode("\n",$suggestions);
+	}
+	
+	function add_lab_item()
+	{
+		$data=array();
+		$lab_item_id = $this->input->post("item");
+
+		if(!$this->consultant_lib->add_lab_item($lab_item_id))
+		{
+			$data['error']='Unable to add item';
+		}
+		
+		$this->lab_request_form($data);
+	}
+	
+	function delete_lab_item($item_number)
+	{
+		$this->consultant_lib->delete_lab_item($item_number);
+		$this->lab_request_form();
+	}
+	
+	function complete_lab_request()
+	{
+		$data['lab_cart']=$this->consultant_lib->get_lab_cart();
+		$data['total']=$this->consultant_lib->get_lab_request_total();
+		$customer_id=$this->consultant_lib->get_customer();
+		$employee_id=$this->Employee->get_logged_in_employee_info()->person_id;
+		$comment = $this->input->post('comment');
+		
+		$department="Lab";
+
+		//SAVE invoice to database
+		$data['invoice_id']='Invoice '.$this->Consultation->save_request($data['lab_cart'], $customer_id,$employee_id,$comment,$data['total'],$department);
+		if ($data['invoice_id'] == 'Invoice -1')
+		{
+			$data['error_message'] = $this->lang->line('invoices_transaction_failed');
+		}
+		else $data['success'] = "Lab Request successfully sent";
+		
+		$this->consultant_lib->clear_lab_request();
+		$this->_reload($data);
+	}
+	
+	function cancel_lab_request()
+	{
+		$this->consultant_lib->clear_lab_request();
+    	$this->_reload();
+	}
+	
+	function xray_request($data=array())
+	{	
+		$customer_id=$this->consultant_lib->get_customer();
+		$this->consultant_lib->get_xray_request($customer_id);
+		
+		$this->xray_request_form();
+	}
+	
+	function xray_request_form($data=array())
+	{	
+		$customer_id=$this->consultant_lib->get_customer();
+		
+		$data['xray_cart']=$this->consultant_lib->get_xray_cart();
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/xray_request",$data);
+	}
+	
+	function xray_item_search()
+	{
+		$suggestions = $this->Item->get_item_search_suggestions_xray($this->input->post('q'),$this->input->post('limit'));
+		echo implode("\n",$suggestions);
+	}
+	
+	function add_xray_item()
+	{
+		$data=array();
+		$xray_item_id = $this->input->post("item");
+
+		if(!$this->consultant_lib->add_xray_item($xray_item_id))
+		{
+			$data['error']='Unable to add item';
+		}
+		
+		$this->xray_request_form($data);
+	}
+	
+	function delete_xray_item($item_number)
+	{
+		$this->consultant_lib->delete_xray_item($item_number);
+		$this->xray_request_form();
+	}
+	
+	function complete_xray_request()
+	{
+		$data['xray_cart']=$this->consultant_lib->get_xray_cart();
+		$data['total']=$this->consultant_lib->get_xray_request_total();
+		$customer_id=$this->consultant_lib->get_customer();
+		$employee_id=$this->Employee->get_logged_in_employee_info()->person_id;
+		$comment = $this->input->post('comment');
+		
+		$department="X-Ray";
+
+		//SAVE invoice to database
+		$data['invoice_id']='Invoice '.$this->Consultation->save_request($data['xray_cart'], $customer_id,$employee_id,$comment,$data['total'],$department);
+		if ($data['invoice_id'] == 'Invoice -1')
+		{
+			$data['error_message'] = $this->lang->line('invoices_transaction_failed');
+		}
+		else $data['success'] = "Xray Request successfully sent";
+		
+		$this->consultant_lib->clear_xray_request();
+		$this->_reload($data);
+	}
+	
+	function cancel_xray_request()
+	{
+		$this->consultant_lib->clear_xray_request();
+    	$this->_reload();
+	}
+	
+	function service_request($data=array())
+	{
+		$customer_id=$this->consultant_lib->get_customer();
+		$this->consultant_lib->get_service_request($customer_id);
+		
+		$this->service_request_form();
+	}
+	
+	function service_request_form($data=array())
+	{
+		
+		$customer_id=$this->consultant_lib->get_customer();
+		
+		$data['service_cart']=$this->consultant_lib->get_service_cart();
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/service_request",$data);
+	}
+	
+	function service_item_search()
+	{
+		$suggestions = $this->Item->get_item_search_suggestions_service($this->input->post('q'),$this->input->post('limit'));
+		echo implode("\n",$suggestions);
+	}
+	
+	function add_service_item()
+	{
+		$data=array();
+		$service_item_id = $this->input->post("item");
+		
+		if(!$this->consultant_lib->add_service_item($service_item_id))
+		{
+			$data['error']='Unable to add item';
+		}
+		
+		$this->service_request_form($data);
+	}
+	
+	function delete_service_item($item_number)
+	{
+		$this->consultant_lib->delete_service_item($item_number);
+		$this->service_request_form();
+	}
+	
+	function complete_service_request()
+	{
+		$data['service_cart']=$this->consultant_lib->get_service_cart();
+		$data['total']=$this->consultant_lib->get_service_request_total();
+		$customer_id=$this->consultant_lib->get_customer();
+		$employee_id=$this->Employee->get_logged_in_employee_info()->person_id;
+		$comment = $this->input->post('comment');
+		$opd_services=$this->input->post('opd_services');
+		$department="Nursing";
+
+		//SAVE invoice to database
+		$data['invoice_id']='Invoice '.$this->Consultation->save_request($data['service_cart'], $customer_id,$employee_id,$comment,$data['total'],$department,$opd_services);
+		if ($data['invoice_id'] == 'Invoice -1')
+		{
+			$data['error_message'] = $this->lang->line('invoices_transaction_failed');
+		}
+		else $data['success'] = "Other Service Request successfully sent";
+		
+		$this->consultant_lib->clear_service_request();
+		$this->_reload($data);
+	}
+	
+	function cancel_service_request()
+	{
+		$this->consultant_lib->clear_service_request();
+    	$this->_reload();
+	}
+	
+	function lab_report()
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		
+		$customer_id=$this->consultant_lib->get_customer();
+		$data['lab_report']=$this->Consultation->get_lab_report($customer_id);
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/lab_report",$data);
+	}
+	
+	function xray_report()
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		
+		$customer_id=$this->consultant_lib->get_customer();
+		$data['xray_report']=$this->Consultation->get_xray_report($customer_id);
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/xray_report",$data);
+	}
+	
+	function preview_lab_report($consultation_id)
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		
+		$customer_id=$this->Consultation->get_consultation_summary($consultation_id)->row()->patient_id;
+		$data['lab_report']=$this->Consultation->preview_lab_report($consultation_id);
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/preview_lab_report",$data);
+	}
+	
+	function preview_xray_report($consultation_id)
+	{
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		
+		$customer_id=$this->Consultation->get_consultation_summary($consultation_id)->row()->patient_id;
+		$data['xray_report']=$this->Consultation->preview_xray_report($consultation_id);
+		if($customer_id!=-1)
+		{
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+			$data['gender'] = $cust_info->gender;
+			$data['blood_pressure'] = $info->blood_pressure;
+			$data['temperature'] = $info->temperature;
+			$data['pulse_rate'] = $info->pulse_rate;
+			$data['weight'] = $info->weight;
+			$data['customer_id'] = $customer_id;
+		}
+		$this->load->view("consultant/preview_xray_report",$data);
+	}
+	
+	function consultation_history()
+	{
+		$patient_id = $this->consultant_lib->get_customer();
+		
+		$config['base_url'] = site_url('/'.$this->session->userdata('consultation').'/consultation_history');
+		$config['total_rows'] = $this->Consultation->count_history($patient_id);
+		$config['per_page'] = '20';
+		$config['uri_segment'] = 3;
+		$this->pagination->initialize($config);
+		
+		$info=$this->Customer->get_info_consultation($patient_id);
+		$cust_info=$this->Customer->get_info($customer_id);
+		
+		$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+		$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+		$data['age'] = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($cust_info->age))))->format('%y');
+		$data['gender'] = $cust_info->gender;
+		$data['blood_pressure'] = $info->blood_pressure;
+		$data['temperature'] = $info->temperature;
+		$data['pulse_rate'] = $info->pulse_rate;
+		$data['weight'] = $info->weight;
+		$data['customer_id'] = $patient_id;
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+			
+		$data['controller_name']=strtolower(get_class());
+		$data['form_width']=$this->get_form_width();
+		$data['manage_table']=get_consultation_manage_table( $this->Consultation->get_history( $patient_id, $config['per_page'], $this->uri->segment( $config['uri_segment'] ) ),$this );
+		$this->load->view('consultant/consultation_history',$data);
+	}
+	
+	function view_summary($consultation_id)
+	{
+		$summary = $this->Consultation->get_consultation_summary($consultation_id)->row();
+		
+		$info=$this->Customer->get_info($summary->patient_id);
+		$person_info = $this->Employee->get_info($summary->consultant_id);
+		$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+		$data['gender'] = $info->gender;
+		$data['date'] = $summary->consultation_time;
+		$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
+		$data['complaints'] = unserialize($summary->consultation_complaints);
+		$data['medical_history'] = unserialize($summary->consultation_medical_history);
+		$data['family_history'] = unserialize($summary->consultation_family_history);
+		$data['obst_gyn'] = unserialize($summary->consultation_obst_gyn);
+		$data['examination'] = unserialize($summary->consultation_examination);
+		$data['diagnoses'] = $this->Consultation->get_consultation_diagnoses($consultation_id);
+		
+		$this->load->view('consultant/consultation_summary',$data);
+	}
+	
+	function print_summary($consultation_id=FALSE){
+		if($consultation_id){
+			$summary = $this->Consultation->get_consultation_summary($consultation_id)->row();
+		
+			$info=$this->Customer->get_info($summary->patient_id);
+			$person_info = $this->Employee->get_info($summary->consultant_id);
+			$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+			$data['gender'] = $info->gender;
+			$data['date'] = $summary->consultation_time;
+			$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
+			$data['complaints'] = unserialize($summary->consultation_complaints);
+			$data['medical_history'] = unserialize($summary->consultation_medical_history);
+			$data['family_history'] = unserialize($summary->consultation_family_history);
+			$data['obst_gyn'] = unserialize($summary->consultation_obst_gyn);
+			$data['examination'] = unserialize($summary->consultation_examination);
+			$data['diagnoses'] = $this->Consultation->get_consultation_diagnoses($consultation_id);
+		}
+		else{
+			$person_info = $this->Employee->get_logged_in_employee_info();
+			$customer_id=$this->consultant_lib->get_customer();
+			$info=$this->Customer->get_info_consultation($customer_id);
+			$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+			$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
+			$data['patient_id'] = $this->Appconfig->get('patient_prefix').$customer_id;
+			
+			$data['diagnoses'] = $this->consultant_lib->get_diagnoses();
+			$data['complaints'] = $this->consultant_lib->get_complaints();
+			$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
+			$data['medical_history'] = $this->consultant_lib->get_medical_history();
+			$data['family_history'] = $this->consultant_lib->get_family_history();
+			$data['examination'] = $this->consultant_lib->get_examination();
+		}
+		
+		$this->load->view('consultant/print_summary',$data);
+	}
+	
+	function refer()
+	{
+		$data['departments']=$this->Consultation->get_outpatient_services();
+		$this->load->view('consultant/refer',$data);
+	}
+	
+	function save_referral()
+	{
+		$doctor = trim($this->input->post('refer_doctor'));
+		$department = trim($this->input->post('refer_department'));
+		$description = trim($this->input->post('refer_description'));
+		
+		$person_info = $this->Employee->get_logged_in_employee_info();
+		$patient_id=$this->consultant_lib->get_customer();
+		$consultant_id=$person_info->person_id;
+		
+		$referral_data = array(
+			"referral_doctor" => "$doctor",
+			"referral_department" => "$department",
+			"referral_description" => "$description",
+		);
+		
+		//$this->Consultation->save_referral($referral_data,$patient_id,$consultant_id);
+		if($this->Consultation->save_referral($referral_data,$patient_id,$consultant_id))
+		{
+			echo json_encode(array('success'=>true,'message'=>'Referral sent successfully'));
+		}
+		else
+		{
+			echo json_encode(array('success'=>false,'message'=>'Referral failed'));
+		}
+	}
+	
+	function preview_referrer_notes($consultation_id)
+	{
+		$summary = $this->Consultation->get_consultation_summary($consultation_id)->row();
+		
+			$info=$this->Customer->get_info($summary->patient_id);
+			$person_info = $this->Employee->get_info($summary->consultant_id);
+			$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+			$data['gender'] = $info->gender;
+			$data['date'] = $summary->consultation_time;
+			$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
+			$data['complaints'] = unserialize($summary->consultation_complaints);
+			$data['medical_history'] = unserialize($summary->consultation_medical_history);
+			$data['family_history'] = unserialize($summary->consultation_family_history);
+			$data['obst_gyn'] = unserialize($summary->consultation_obst_gyn);
+			$data['examination'] = unserialize($summary->consultation_examination);
+			$data['diagnoses'] = $this->Consultation->get_consultation_diagnoses($consultation_id);
+			$data['patient_id'] = $summary->patient_id;
+			
+		$this->load->view("consultant/preview_referrer_notes",$data);
+	}
+	
+	function view_referrer_notes($consultation_id)
+	{
+		$summary = $this->Consultation->get_consultation_summary($consultation_id)->row();
+		
+			$info=$this->Customer->get_info($summary->patient_id);
+			$person_info = $this->Employee->get_info($summary->consultant_id);
+			$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+			$data['gender'] = $info->gender;
+			$data['date'] = $summary->consultation_time;
+			$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
+			$data['complaints'] = unserialize($summary->consultation_complaints);
+			$data['medical_history'] = unserialize($summary->consultation_medical_history);
+			$data['family_history'] = unserialize($summary->consultation_family_history);
+			$data['obst_gyn'] = unserialize($summary->consultation_obst_gyn);
+			$data['examination'] = unserialize($summary->consultation_examination);
+			$data['diagnoses'] = $this->Consultation->get_consultation_diagnoses($consultation_id);
+			$data['patient_id'] = $summary->patient_id;
+			
+		$this->load->view("consultant/consultation_summary",$data);
+	}
+
+	function get_form_width()
+	{			
+		return 650;
+	}
+}
+
+/* End of file consultant.php */
+/* Location: ./application/controllers/consultant.php */

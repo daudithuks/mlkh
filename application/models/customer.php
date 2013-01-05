@@ -1,0 +1,686 @@
+<?php
+class Customer extends Person
+{	
+	/*
+	Determines if a given person_id is a customer
+	*/
+	function exists($person_id)
+	{
+		$this->db->from('customers');	
+		$this->db->join('people', 'people.person_id = customers.person_id');
+		$this->db->where('customers.person_id',$person_id);
+		$query = $this->db->get();
+		
+		return ($query->num_rows()==1);
+	}
+	
+	/*
+	Returns all the patients queued
+	*/
+	function get_all_queued($limit=10000, $offset=0)
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id','inner');		
+		$this->db->join('admission_queue','customers.person_id=admission_queue.queue_customer_id');	
+		$this->db->where('deleted',0);
+		$this->db->order_by("queue_sale_id", "asc");
+		$this->db->limit($limit);
+		$this->db->offset($offset);
+		return $this->db->get();		
+	}
+
+	function get_all_queued_triage($limit=10000, $offset=0)
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id','inner');		
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');
+		$this->db->where('deleted',0);
+		$this->db->where('encounter_status','0');
+		$this->db->order_by("encounter_start", "asc");
+		$this->db->limit($limit);
+		$this->db->offset($offset);
+		return $this->db->get();		
+	}
+	
+	/*
+	Returns all the patients to be triaged
+	
+	function get_all_add_triage($limit=10000, $offset=0)
+	{
+		$this->db->distinct();
+		$this->db->from('customers');
+		$this->db->join('sales','customers.person_id=sales.customer_id','inner');	
+		$this->db->join('people','customers.person_id=people.person_id','inner');		
+		$this->db->where('deleted',0);
+		$this->db->where('triage_status', '0');		
+		$this->db->order_by("sale_id", "asc");
+		$this->db->limit($limit);
+		$this->db->offset($offset);
+		return $this->db->get();		
+	}
+	*/
+
+	/*
+	Returns all the triage results
+	*/
+	function get_all_view_triage($limit=10000, $offset=0)
+	{
+		$this->db->distinct();
+		$this->db->from('customers');
+		$this->db->join('sales','customers.person_id=sales.customer_id','inner');	
+		$this->db->join('people','customers.person_id=people.person_id','inner');
+		$this->db->where('triage_status', '1');		
+		$this->db->order_by("sale_id", "asc");
+		$this->db->limit($limit);
+		$this->db->offset($offset);
+		return $this->db->get();		
+	}
+
+	function count_all()
+	{
+		$this->db->from('customers');
+		$this->db->where('deleted',0);
+		return $this->db->count_all_results();
+	}
+
+	/*
+	Counts the number of patients to be triaged
+	*/
+
+	function count_all_admission()
+	{
+		$this->db->from('admission_queue');
+		return $this->db->count_all_results();
+	}
+
+	/*
+	Counts the number of patients to be triaged
+	*/
+
+	function count_all_add_triage()
+	{
+		$this->db->from('customers');
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');
+		$this->db->where('encounter_status','0');
+		return $this->db->count_all_results();
+	}
+
+	/*
+	Counts the number of triages
+	*/
+
+	function count_all_view_triage()
+	{
+		$this->db->from('customers');
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');
+		$this->db->where('encounter_status','1');
+		return $this->db->count_all_results();
+	}
+	
+	/*
+	Gets information about a particular customer
+	*/
+	function get_info($customer_id)
+	{
+		$this->db->from('customers');	
+		$this->db->join('people', 'people.person_id = customers.person_id');
+		$this->db->where('customers.person_id',$customer_id);
+		$query = $this->db->get();
+		
+		if($query->num_rows()==1)
+		{
+			return $query->row();
+		}
+		else
+		{
+			//Get empty base parent object, as $customer_id is NOT an customer
+			$person_obj=parent::get_info(-1);
+			
+			//Get all the fields from customer table
+			$fields = $this->db->list_fields('customers');
+			
+			//append those fields to base parent object, we we have a complete empty object
+			foreach ($fields as $field)
+			{
+				$person_obj->$field='';
+			}
+			
+			return $person_obj;
+		}
+	}
+
+	/*
+	Gets information about a particular triage
+	*/
+	function get_info_triage($customer_id)
+	{
+		$this->db->from('triage');
+		$this->db->where('patient_id',$customer_id);	
+		$query = $this->db->get();
+		
+		if($query->num_rows()==1)
+		{
+			return $query->row();
+		}
+		else
+		{
+			//Get empty base parent object, as $customer_id is NOT an customer
+			$person_obj=parent::get_info(-1);
+			
+			//Get all the fields from customer table
+			$fields = $this->db->list_fields('triage');
+			
+			//append those fields to base parent object, we we have a complete empty object
+			foreach ($fields as $field)
+			{
+				$person_obj->$field='';
+			}
+			
+			return $person_obj;
+		}
+	}
+
+	function get_info_dispense($customer_id,$consultation_id)
+	{
+		$this->db->from('people');
+		$this->db->join('consultation', 'consultation.patient_id = people.person_id');
+		$this->db->join('triage', 'consultation.encounter_id = triage.encounter_id');
+		$this->db->where('people.person_id',$customer_id);
+		$this->db->where('consultation_id',$consultation_id);
+		$this->db->order_by("triage_id", "desc");
+		return $this->db->get()->row();
+	}
+	
+	/*
+	Gets information about multiple customers
+	*/
+	function get_multiple_info($customer_ids)
+	{
+		$this->db->from('customers');
+		$this->db->join('people', 'people.person_id = customers.person_id');		
+		$this->db->where_in('customers.person_id',$customer_ids);
+		$this->db->order_by("last_name", "asc");
+		return $this->db->get();		
+	}
+	
+	/*
+	Inserts or updates a customer
+	*/
+	function save(&$person_data, &$customer_data,$customer_id=false)
+	{
+		$success=false;
+		//Run these queries as a transaction, we want to make sure we do all or nothing
+		$this->db->trans_start();
+		
+		if(parent::save($person_data,$customer_id))
+		{
+			if (!$customer_id or !$this->exists($customer_id))
+			{
+				$customer_data['person_id'] = $person_data['person_id'];
+				$success = $this->db->insert('customers',$customer_data);				
+			}
+			else
+			{
+				$this->db->where('person_id', $customer_id);
+				$success = $this->db->update('customers',$customer_data);
+			}
+			
+		}
+		
+		$this->db->trans_complete();		
+		return $success;
+	}
+
+	/*
+	Updates a triage
+	*/
+	function save_view_triage(&$person_data, &$customer_id)
+	{
+		$success=false;
+		//Run these queries as a transaction, we want to make sure we do all or nothing
+		$this->db->trans_start();
+		$this->db->where('patient_id', $customer_id);
+		$success = $this->db->update('triage',$person_data);
+		$this->db->trans_complete();		
+		return $success;
+	}
+
+	/*
+	Inserts a triage
+	*/
+	function save_triage(&$person_data, &$customer_id)
+	{
+		$success=false;
+		$encounter_id = $this->update_encounter($customer_id, "1" , $this->check_encounter($customer_id));
+		$person_data['encounter_id']=$encounter_id;
+		
+		$this->db->trans_start();
+		$success=$this->db->insert('triage',$person_data);
+		//$this->db->set('triage_status', '1');
+		//$this->db->where('person_id', $customer_id);
+		//$success=$this->db->update('customers');
+		
+		
+		$this->db->trans_complete();	
+		return $success;	
+	}
+	
+	function check_encounter($customer_id)
+	{
+		$this->db->from('encounter');
+		$this->db->where("patient_id",$customer_id);
+		$this->db->where('encounter_status !=','5');	
+				
+		return $this->db->get()->row()->encounter_id;;
+	}
+	
+	function update_encounter($customer_id, $status, $encounter_id)
+	{
+		$this->db->set('encounter_status', $status);
+		$this->db->set('patient_id', $customer_id);
+		$this->db->set('encounter_finish', date("Y-m-d H:i:s"));
+		if (!$encounter_id){
+			 $this->db->insert('encounter');
+			 $encounter_id = $this->db->insert_id();
+		}
+		else{
+			$this->db->where('encounter_id',$encounter_id);	
+			$this->db->update('encounter');
+		}
+		return $encounter_id;
+	}
+
+	/*
+	Deletes one customer
+	*/
+	function delete($customer_id)
+	{
+		$this->db->where('person_id', $customer_id);
+		return $this->db->update('customers', array('deleted' => 1));
+	}
+	
+	/*
+	Deletes a list of customers
+	*/
+	function delete_list($customer_ids)
+	{
+		$this->db->where_in('person_id',$customer_ids);
+		return $this->db->update('customers', array('deleted' => 1));
+ 	}
+ 	
+ 	/*
+	Get search suggestions to find customers
+	*/
+	function get_search_suggestions($search,$limit=25)
+	{
+		$suggestions = array();
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or middle_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0");
+		$this->db->order_by("last_name", "asc");		
+		$by_name = $this->db->get();
+		foreach($by_name->result() as $row)
+		{
+			$suggestions[]=$row->first_name.' '.$row->last_name;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("customers.person_id",str_ireplace("MLKH","",$search));
+		$this->db->order_by("customers.person_id", "asc");		
+		$by_person_id = $this->db->get();
+		foreach($by_person_id->result() as $row)
+		{
+			$suggestions[]=$this->Appconfig->get('patient_prefix').$row->person_id;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("email",$search);
+		$this->db->order_by("email", "asc");		
+		$by_email = $this->db->get();
+		foreach($by_email->result() as $row)
+		{
+			$suggestions[]=$row->email;		
+		}
+
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("phone_number",$search);
+		$this->db->order_by("phone_number", "asc");		
+		$by_phone = $this->db->get();
+		foreach($by_phone->result() as $row)
+		{
+			$suggestions[]=$row->phone_number;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("national_id",$search);
+		$this->db->order_by("national_id", "asc");		
+		$by_national_id = $this->db->get();
+		foreach($by_national_id->result() as $row)
+		{
+			$suggestions[]=$row->national_id;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("account_number",$search);
+		$this->db->order_by("account_number", "asc");		
+		$by_account_number = $this->db->get();
+		foreach($by_account_number->result() as $row)
+		{
+			$suggestions[]=$row->account_number;		
+		}
+		
+		//only return $limit suggestions
+		if(count($suggestions > $limit))
+		{
+			$suggestions = array_slice($suggestions, 0,$limit);
+		}
+		return $suggestions;
+	
+	}
+	
+	/*
+	Get search suggestions to find customers
+	*/
+	function get_customer_search_suggestions($search,$limit=25)
+	{
+		$suggestions = array();
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or middle_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0");
+		$this->db->order_by("last_name", "asc");		
+		$by_name = $this->db->get();
+		foreach($by_name->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->first_name.' '.$row->last_name;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("customers.person_id",str_ireplace("MLKH","",$search));
+		$this->db->order_by("customers.person_id", "asc");		
+		$by_person_id = $this->db->get();
+		foreach($by_person_id->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$this->Appconfig->get('patient_prefix').$row->person_id;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("account_number",$search);
+		$this->db->order_by("account_number", "asc");		
+		$by_account_number = $this->db->get();
+		foreach($by_account_number->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->account_number;
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("national_id",$search);
+		$this->db->order_by("national_id", "asc");		
+		$by_national_id = $this->db->get();
+		foreach($by_national_id->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->national_id;		
+		}
+
+		//only return $limit suggestions
+		if(count($suggestions > $limit))
+		{
+			$suggestions = array_slice($suggestions, 0,$limit);
+		}
+		return $suggestions;
+
+	}
+	
+	/*
+	Get search suggestions to find patients who have been queued
+	*/
+	function get_customer_search_suggestions_queued($search,$limit=25)
+	{
+		$suggestions = array();
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');		
+		$this->db->where('encounter_status','0');	
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or middle_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0");
+		$this->db->order_by("last_name", "asc");		
+		$by_name = $this->db->get();
+		foreach($by_name->result() as $row)
+		{
+			$suggestions[]=$row->first_name.' '.$row->last_name;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');		
+		$this->db->where('encounter_status','0');	
+		$this->db->where('deleted',0);	
+		$this->db->like("customers.person_id",str_ireplace("MLKH","",$search));
+		$this->db->order_by("customers.person_id", "asc");		
+		$by_person_id = $this->db->get();
+		foreach($by_person_id->result() as $row)
+		{
+			$suggestions[]=$this->Appconfig->get('patient_prefix').$row->person_id;
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');		
+		$this->db->where('encounter_status','0');	
+		$this->db->where('deleted',0);	
+		$this->db->like("account_number",$search);
+		$this->db->order_by("account_number", "asc");		
+		$by_account_number = $this->db->get();
+		foreach($by_account_number->result() as $row)
+		{
+			$suggestions[]=$row->account_number;
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');		
+		$this->db->where('encounter_status','0');	
+		$this->db->where('deleted',0);
+		$this->db->like("national_id",$search);
+		$this->db->order_by("national_id", "asc");		
+		$by_national_id = $this->db->get();
+		foreach($by_national_id->result() as $row)
+		{
+			$suggestions[]=$row->national_id;		
+		}
+
+		//only return $limit suggestions
+		if(count($suggestions > $limit))
+		{
+			$suggestions = array_slice($suggestions, 0,$limit);
+		}
+		return $suggestions;
+
+	}
+
+	/*
+	Preform a search on customers
+	*/
+	function search($search)
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');		
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or
+		middle_name LIKE '%".$this->db->escape_like_str($search)."%' or
+		`mlkh_customers`.`person_id` LIKE '%".$this->db->escape_like_str(str_ireplace("MLKH","",$search))."%' or
+		national_id LIKE '%".$this->db->escape_like_str($search)."%' or 
+		email LIKE '%".$this->db->escape_like_str($search)."%' or 
+		phone_number LIKE '%".$this->db->escape_like_str($search)."%' or 
+		account_number LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0");		
+		$this->db->order_by("last_name", "asc");
+		
+		return $this->db->get();	
+	}
+
+	function search_triage($search)
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');	
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');		
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or
+		middle_name LIKE '%".$this->db->escape_like_str($search)."%' or
+		`mlkh_customers`.`person_id` LIKE '%".$this->db->escape_like_str(str_ireplace("MLKH","",$search))."%' or
+		national_id LIKE '%".$this->db->escape_like_str($search)."%' or 
+		email LIKE '%".$this->db->escape_like_str($search)."%' or 
+		phone_number LIKE '%".$this->db->escape_like_str($search)."%' or 
+		account_number LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0 and encounter_status='0'");		
+		$this->db->order_by("last_name", "asc");
+		
+		return $this->db->get();	
+	}
+	/*
+	Gets information about a particular customer for consultation module
+	*/
+	function get_info_consultation($customer_id)
+	{
+		$encounter_id=$this->check_encounter($customer_id);
+		
+		$this->db->from('people');	
+		$this->db->join('triage', 'triage.patient_id = people.person_id');
+		$this->db->join('encounter', 'triage.patient_id = encounter.patient_id');
+		$this->db->where('people.person_id',$customer_id);
+		if($encounter_id) $this->db->where('encounter.encounter_id',$encounter_id);
+		$this->db->order_by("triage_id", "desc");
+		return $this->db->get()->row();
+	}
+	
+
+	//In case of search suggestions for consultation
+	function get_customer_search_suggestions_consultation($search,$limit=25)
+	{
+		$suggestions = array();
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');
+		$this->db->join('triage','customers.person_id=triage.patient_id');		
+		$this->db->where("(first_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		last_name LIKE '%".$this->db->escape_like_str($search)."%' or middle_name LIKE '%".$this->db->escape_like_str($search)."%' or 
+		CONCAT(`first_name`,' ',`last_name`) LIKE '%".$this->db->escape_like_str($search)."%') and deleted=0");
+		$this->db->order_by("last_name", "asc");		
+		$by_name = $this->db->get();
+		foreach($by_name->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->first_name.' '.$row->last_name;		
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');
+		$this->db->join('triage','customers.person_id=triage.patient_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("account_number",$search);
+		$this->db->order_by("account_number", "asc");		
+		$by_account_number = $this->db->get();
+		foreach($by_account_number->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->account_number;
+		}
+		
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id');
+		$this->db->join('triage','customers.person_id=triage.patient_id');	
+		$this->db->where('deleted',0);		
+		$this->db->like("national_id",$search);
+		$this->db->order_by("national_id", "asc");		
+		$by_national_id = $this->db->get();
+		foreach($by_national_id->result() as $row)
+		{
+			$suggestions[]=$row->person_id.'|'.$row->national_id;		
+		}
+
+		//only return $limit suggestions
+		if(count($suggestions > $limit))
+		{
+			$suggestions = array_slice($suggestions, 0,$limit);
+		}
+		return $suggestions;
+
+	}
+	
+	function get_diagnosis_search_suggestions_consultation($search,$limit=25)
+	{
+		$suggestions = array();
+		
+		$this->db->from('consultation_icd10');
+		$this->db->where("sub_level",'3');
+		$this->db->like("diagnosis_code",$search);
+		$this->db->order_by("diagnosis_code", "asc");		
+		$by_code = $this->db->get();
+		foreach($by_code->result() as $row)
+		{
+			$suggestions[]=$row->diagnosis_code.'|'.$row->description;		
+		}
+		
+		$this->db->from('consultation_icd10');
+		$this->db->where("sub_level",'3');
+		$this->db->like("description",$search);
+		$this->db->order_by("diagnosis_code", "asc");		
+		$by_name = $this->db->get();
+		foreach($by_name->result() as $row)
+		{
+			$suggestions[]=$row->diagnosis_code.'|'.$row->description;
+		}
+		
+		
+		//only return $limit suggestions
+		if(count($suggestions > $limit))
+		{
+			$suggestions = array_slice($suggestions, 0,$limit);
+		}
+		return $suggestions;
+
+	}
+	
+
+	function get_diseases()
+	{
+		$q = $this->db->get('encounter_disease');
+		if ($q->num_rows() > 0) {
+			foreach ($q->result_array() as $row) {
+				//$data[] = array($row['id'] => $row['disease_name']);	
+				$data[$row['id']] = $row['disease_name'];	
+			}
+			return $data;
+		}
+	}
+	function create($data)
+	{
+		$this->db->trans_start();
+		$result = $this->db->insert('diagnosis', $data);
+		$this->db->trans_complete();
+		return $result;
+	}
+
+}
+?>
