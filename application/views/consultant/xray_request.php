@@ -40,12 +40,10 @@ echo $this->lang->line('invoices_find_or_scan_item');
 <table id="register">
 <thead>
 <tr>
-<th style="width:30%;"><?php echo $this->lang->line('invoices_item_number'); ?></th>
+<th style="width:20%;"><?php echo $this->lang->line('invoices_item_number'); ?></th>
 <th style="width:35%;"><?php echo $this->lang->line('invoices_item_name'); ?></th>
-<th style="width:10%;"><?php //echo $this->lang->line('invoices_price'); ?></th>
-<th style="width:10%;"><?php //echo $this->lang->line('invoices_quantity'); ?></th>
-<th style="width:15%;"><?php //Secho $this->lang->line('invoices_total'); ?></th>
-<th style="width:10%;"></th>
+<th style="width:35%;"><?php echo 'Description'; ?></th>
+
 <th style="width:10%;"></th>
 </tr>
 </thead>
@@ -64,7 +62,7 @@ else
 	foreach(array_reverse($xray_cart, true) as $line=>$item)
 	{
 		$cur_item_info = $this->Item->get_info($item['item_id']);
-		echo form_open($controller_name."/xray_request");
+		echo form_open($controller_name."/save_description_xray",array('id'=>'xray_request_form_'.$line));
 	?>
 		<tr>
 		<td><?php echo $item['item_number']; ?></td>
@@ -78,38 +76,8 @@ else
         </td>
 
 
-
-		<?php if ($items_module_allowed)
-		{
-		?>
-			<td><?php echo form_hidden(array('name'=>'price','value'=>$item['price'],'size'=>'6'));?></td>
-		<?php
-		}
-		else
-		{
-		?>
-			<td><?php $item['price']; ?></td>
-			<?php echo form_hidden('price',$item['price']); ?>
-		<?php
-		}
-		?>
-
-		<td>
-		<?php
-        	if($item['is_serialized']==1)
-        	{
-        		echo $item['quantity'];
-        		echo form_hidden('quantity',$item['quantity']);
-        	}
-        	else
-        	{
-        		echo form_hidden(array('name'=>'quantity','value'=>$item['quantity'],'size'=>'2'));
-        	}
-		?>
-		</td>
-
-		<td><?php to_currency($item['price']*$item['quantity']-$item['price']*$item['quantity']*$item['discount']/100); ?></td>
-		<td><?php form_submit("edit_item", $this->lang->line('invoices_edit_item'));?></td>
+		<?php echo form_hidden('line',$line);?>
+		<td><?php echo form_textarea(array('name'=>'description','value'=>$item['description'],'rows'=>'3','onchange'=>"save_description_xray($line)"));?></td>
 		<td><?php echo anchor($controller_name."/delete_xray_item/$line",'['.$this->lang->line('common_delete').']');?></td>
 		</tr>
 		
@@ -332,6 +300,11 @@ function checkPaymentTypeGiftcard()
 	{
 		$("#amount_tendered_label").html("<?php echo $this->lang->line('invoices_amount_tendered'); ?>");		
 	}
+}
+
+function save_description_xray(line)
+{
+	$("#xray_request_form_"+line).ajaxSubmit();
 }
 
 </script>

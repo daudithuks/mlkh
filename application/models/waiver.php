@@ -8,7 +8,6 @@ class Waiver extends CI_Model
 	{
 		$this->db->from('waivers');
 		$this->db->where('waiver_id',$waiver_id);
-		$this->db->where('deleted',0);
 		$query = $this->db->get();
 
 		return ($query->num_rows()==1);
@@ -19,7 +18,7 @@ class Waiver extends CI_Model
 	*/
 	function get_all($limit=10000, $offset=0)
 	{
-		$query = "* FROM `mlkh_waivers`AS w INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `employee` FROM `mlkh_people`)AS e ON w.`employee_id` = e.`person_id` INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `customer` FROM `mlkh_people`)AS c ON w.`customer_id` = c.`person_id` WHERE w.`deleted`=0";
+		$query = "* FROM `mlkh_waivers`AS w INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `employee` FROM `mlkh_people`)AS e ON w.`employee_id` = e.`person_id` INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `customer` FROM `mlkh_people`)AS c ON w.`customer_id` = c.`person_id`";
 		//$this->db->where('deleted',0);
 		$this->db->select($query,FALSE);
 		/*$this->db->from('waivers');
@@ -35,7 +34,6 @@ class Waiver extends CI_Model
 	function count_all()
 	{
 		$this->db->from('waivers');
-		$this->db->where('deleted',0);
 		return $this->db->count_all_results();
 	}
 
@@ -44,7 +42,7 @@ class Waiver extends CI_Model
 	*/
 	function get_info($waiver_id)
 	{
-		$query = "* FROM `mlkh_waivers`AS w INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `employee` FROM `mlkh_people`)AS e ON w.`employee_id` = e.`person_id` INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `customer` FROM `mlkh_people`)AS c ON w.`customer_id` = c.`person_id` WHERE w.`deleted`=0 AND w.`waiver_id`='$waiver_id'";
+		$query = "* FROM `mlkh_waivers`AS w INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `employee` FROM `mlkh_people`)AS e ON w.`employee_id` = e.`person_id` INNER JOIN ( SELECT `person_id`,CONCAT(`first_name`,SPACE(1),`last_name`) AS `customer` FROM `mlkh_people`)AS c ON w.`customer_id` = c.`person_id` WHERE w.`waiver_id`='$waiver_id'";
 		/*$this->db->where('waiver_id',$waiver_id);
 		$this->db->where('deleted',0);*/
 		$this->db->select($query,FALSE);
@@ -78,9 +76,7 @@ class Waiver extends CI_Model
 	function get_waiver_id($serial)
 	{
 		$this->db->from('waivers');
-		$this->db->where('serial',$serial);
-		$this->db->where('deleted',0);
-
+		
 		$query = $this->db->get();
 
 		if($query->num_rows()==1)
@@ -95,8 +91,6 @@ class Waiver extends CI_Model
 	{
 		$this->db->from('waivers');
 		$this->db->where('customer_id',$customer_id);
-		$this->db->where('value > 0');
-		$this->db->where('deleted',0);
 		
 		return $this->db->get()->row();
 	}
@@ -108,7 +102,6 @@ class Waiver extends CI_Model
 	{
 		$this->db->from('waivers');
 		$this->db->where_in('waiver_id',$waiver_ids);
-		$this->db->where('deleted',0);
 		$this->db->order_by("waiver_date", "asc");
 		return $this->db->get();
 	}
@@ -116,20 +109,52 @@ class Waiver extends CI_Model
 	/*
 	Inserts or updates a waiver
 	*/
-	function save(&$waiver_data,$waiver_id=false)
+	function save($items, $customer_id,$employee_id,$comment,$total_discount)
 	{
-		if (!$waiver_id or !$this->exists($waiver_id))
+		if(count($items)==0)
+			return -1;
+		$invoices = array();	
+		$this->db->trans_start();
+		
+		foreach($items as $line=>$item)
 		{
-			if($this->db->insert('waivers',$waiver_data))
-			{
-				$waiver_data['waiver_id']=$this->db->insert_id();
-				return true;
-			}
-			return false;
-		}
+			$cur_item_info = $this->Item->get_info($item['item_id']);
 
-		$this->db->where('waiver_id', $waiver_id);
-		return $this->db->update('waivers',$waiver_data);
+			$invoices_items_data = array
+			(
+				'description'=>$item['description'],
+				'serialnumber'=>$item['serialnumber'],
+				'quantity_purchased'=>$item['quantity'],
+				'item_cost_price' => $cur_item_info->cost_price,
+				'item_unit_price'=>$item['price'],
+				'discount_percent'=>$item['discount']
+			);
+				
+			$this->db->where('invoice_id',$item['invoice']);
+			$this->db->where('item_id',$item['item_id']);
+			$this->db->update('invoices_items',$invoices_items_data);
+			if (!in_array($item['invoice'], $invoices)) {
+				$invoices[] = $item['invoice'];
+			}
+
+		}
+		
+		$waiver_data = array(
+			'invoices' => serialize($invoices),
+			'customer_id'=> $this->Customer->exists($customer_id) ? $customer_id : null,
+			'employee_id'=>$employee_id,
+			'waiver_discount'=>$total_discount,
+			'comment'=>$comment
+		);
+		
+		$this->db->insert('waivers',$waiver_data);
+		
+		$this->db->trans_complete();
+		
+		if ($this->db->trans_status() === FALSE)
+		{
+			return -1;
+		}
 	}
 
 	/*

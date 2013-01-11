@@ -129,7 +129,6 @@ if(count($prescriptions)==0)
         <div><?php if(isset($consultation))
 					echo anchor("dispense/view_consultation_notes/$consultation",'Consultation Notes',array('class'=>'thickbox none','title'=>'Consultation Notes'))."<br />";
 	?></div>
-	</div>
 	<?php endif ?>
 	<?php if (isset($histories)): ?>
 		<div class="finish_sale">

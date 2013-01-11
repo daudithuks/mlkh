@@ -82,7 +82,7 @@ class Xray extends Secure_area
 		$quantity = $this->input->post("quantity");
 		$discount = $this->input->post("discount");
 
-		if(!$this->invoice_lib->edit_item($line,$result,$serialnumber,$quantity,$discount,$price,$result))
+		if(!$this->invoice_lib->edit_item($line,$serialnumber,$quantity,$discount,$price,$result))
 		{
 			$data['error']=$this->lang->line('invoices_error_editing_item');
 		}
@@ -220,6 +220,12 @@ class Xray extends Secure_area
     	$this->_reload();
 
     }
+	
+	function refresh_queue()
+	{
+		$data['main_queue']=$this->Invoice->get_test_queue('X-Ray');
+		$this->load->view("xray/queue",$data);
+	}
 
 }
 ?>

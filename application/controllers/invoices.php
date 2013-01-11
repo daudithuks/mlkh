@@ -74,7 +74,7 @@ class Invoices extends Secure_area
 		{
 			$this->invoice_lib->return_entire_invoice($item_id_or_number_or_receipt);
 		}
-		elseif(!$this->invoice_lib->add_item($item_id_or_number_or_receipt,$quantity,$age,$check))
+		elseif(!$this->invoice_lib->add_item($item_id_or_number_or_receipt,$quantity))
 		{
 			$data['error']=$this->lang->line('invoices_unable_to_add_item');
 		}

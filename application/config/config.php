@@ -258,7 +258,7 @@ $config['encryption_key'] = 'PUT_YOUR_ENCRYPTION_KEY_HERE';
 |
 */
 $config['sess_cookie_name']		= 'ci_session';
-$config['sess_expiration']		= 1800;
+$config['sess_expiration']		= '';
 $config['sess_expire_on_close']	= TRUE;
 $config['sess_encrypt_cookie']	= FALSE;
 $config['sess_use_database']	= TRUE;

@@ -1033,7 +1033,13 @@
             'value'=>'laceration',
             'checked'=>$examination["eye_lids"]=='laceration'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Laceration</label></td></tr>
+        Laceration</label>label>
+        <?php echo form_radio(array(
+            'name'=>'eye_lids',
+            'value'=>'swelling',
+            'checked'=>$examination["eye_lids"]=='swelling'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Swelling</label></td></tr>
         
         <tr><td valign="top"><b>Conjunctiva</b></td><td>
     	<label>
@@ -1045,10 +1051,10 @@
         Clear</label>&nbsp;<label>
 		<?php echo form_radio(array(
             'name'=>'eye_conjunctiva',
-            'value'=>'infected',
-            'checked'=>$examination["eye_conjunctiva"]=='infected'?'checked':'',
+            'value'=>'injected',
+            'checked'=>$examination["eye_conjunctiva"]=='injected'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Infected</label><br /><label>
+        Injected</label><br /><label>
 		<?php echo form_radio(array(
             'name'=>'eye_conjunctiva',
             'value'=>'redness',
@@ -1072,7 +1078,25 @@
             'value'=>'subconjunctiva haemorrhage',
             'checked'=>$examination["eye_conjunctiva"]=='subconjunctiva haemorrhage'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Subconjunctiva Haemorrhage</label></td></tr>
+        Subconjunctiva Haemorrhage</label><br /><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_conjunctiva',
+            'value'=>'pupillae',
+            'checked'=>$examination["eye_conjunctiva"]=='pupillae'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Pupillae</label>&nbsp;<label>
+		<?php echo form_radio(array(
+            'name'=>'eye_conjunctiva',
+            'value'=>'follicles',
+            'checked'=>$examination["eye_conjunctiva"]=='follicles'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Follicles</label><br /><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_conjunctiva',
+            'value'=>'concrections',
+            'checked'=>$examination["eye_conjunctiva"]=='concrections'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Concrections</label>&nbsp;</td></tr>
         
         <tr><td valign="top"><b>Cornea</b></td><td>
     	<label>
@@ -1102,16 +1126,22 @@
         Laceration</label>&nbsp;<br /><label>
 		<?php echo form_radio(array(
             'name'=>'eye_cornea',
-            'value'=>'lazy',
-            'checked'=>$examination["eye_cornea"]=='lazy'?'checked':'',
+            'value'=>'hazy',
+            'checked'=>$examination["eye_cornea"]=='hazy'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Lazy</label>&nbsp;<label>
+        Hazy</label>&nbsp;<label>
 		<?php echo form_radio(array(
             'name'=>'eye_cornea',
             'value'=>'opaque',
             'checked'=>$examination["eye_cornea"]=='opaque'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Opaque</label>&nbsp;</td></tr>
+        Opaque</label>&nbsp;<br /><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_cornea',
+            'value'=>'keratic precipitates',
+            'checked'=>$examination["eye_cornea"]=='keratic precipitates'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Keratic Precipitates</label></td></tr>
         
         <tr><td valign="top"><b>A/C</b></td><td>
     	<label>
@@ -1132,7 +1162,31 @@
             'value'=>'flat',
             'checked'=>$examination["eye_ac"]=='flat'?'checked':'',
             'onchange' => 'save_examination()')); ?>
-        Flat</label></td></tr>
+        Flat</label><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_ac',
+            'value'=>'cells',
+            'checked'=>$examination["eye_ac"]=='cells'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Cells</label><br /><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_ac',
+            'value'=>'flare',
+            'checked'=>$examination["eye_ac"]=='flare'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Flare</label><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_ac',
+            'value'=>'hyphaema',
+            'checked'=>$examination["eye_ac"]=='hyphaema'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Hyphaema</label><br /><label>
+		<?php echo form_radio(array(
+            'name'=>'eye_ac',
+            'value'=>'hypopyon',
+            'checked'=>$examination["eye_ac"]=='hypopyon'?'checked':'',
+            'onchange' => 'save_examination()')); ?>
+        Hypopyon</label></td></tr>
         
         <tr><td valign="top"><b>Pupil</b></td><td>
     	<label>
@@ -1266,6 +1320,22 @@
      </td>
      </tr></table>
     </div>
+  </div>
+
+  <div class="AccordionPanel">
+    <div class="AccordionPanelTab">ENT</div>
+    <div class="AccordionPanelContent"><?php
+     	$data = array(
+              'name'        => 'ent',
+              'id'          => 'ent_examination',
+              'value'       => $examination['ent'],
+              'rows'        => '10',
+			  'onchange' => 'save_examination()',
+            );
+
+	echo form_textarea($data);
+
+	 ?></div>
   </div>
   
   <div class="AccordionPanel">

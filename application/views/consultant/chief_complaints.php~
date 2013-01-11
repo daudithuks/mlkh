@@ -408,7 +408,8 @@
     <tr><td>
     <?php 
 		$options = array(
-                  'redness and itching||eye'  => 'redness and itching',
+                  'itching||eye'  => 'itching',
+				'redness||eye'  => 'redness',
 				  'pain||eye'  => 'pain',
 				  'tearing||eye'  => 'tearing',
 				  'discharge||eye'  => 'discharge',
@@ -702,7 +703,7 @@ function duration(option)
 			option.selected="";
 			option.value = value[0]+"||"+value[1];
 		}
-		setTimeout(function(){$("#save_complaints_form").ajaxSubmit();},1000);
+		setInterval(function(){$("#save_complaints_form").ajaxSubmit();},1000);
 	}
 }
 

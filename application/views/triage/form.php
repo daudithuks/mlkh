@@ -1,5 +1,5 @@
 <?php
-echo form_open('triage/save/'.$patient_id,array('id'=>'customer_form'));
+echo form_open('triage/save/'.$person_info->person_id,array('id'=>'customer_form'));
 ?>
 <div id="required_fields_message"><?php echo $this->lang->line('common_fields_required_message'); ?></div>
 <ul id="error_message_box"></ul>
@@ -7,16 +7,22 @@ echo form_open('triage/save/'.$patient_id,array('id'=>'customer_form'));
 <legend><?php echo $this->lang->line("triage_basic_information"); ?></legend>
 
 <div class="field_row clearfix">	
-<?php echo form_label('Patient Number:', 'patient_id',array('class'=>'required')); ?>
+<?php echo form_label('Patient Number:', 'patient_number'); ?>
 	<div class='form_field'>
-	<?php echo form_input(array(
-		'name'=>'patient_id',
-		'id'=>'patient_id',
-		'readonly'=> 'readonly',
-		'value'=>$patient_id)
-	);?>
+	<?php 
+	echo $this->Appconfig->get('patient_prefix').$person_info->person_id;
+	echo form_hidden('patient_id',$person_info->person_id); ?>
 	</div>
-</div> 
+</div>
+
+<div class="field_row clearfix">	
+<?php echo form_label('Patient Name:', 'patient_name'); ?>
+	<div class='form_field'>
+	<?php 
+	echo $person_info->first_name.' '.$person_info->last_name; ?>
+	</div>
+</div>
+
 <div class="field_row clearfix">	
 <?php echo form_label('Blood Pressure:', 'blood_pressure'); ?>
 	<div class='form_field'>
@@ -141,14 +147,12 @@ $(document).ready(function()
  		wrapper: "li",
 		rules: 
 		{
-			patient_id: "required",
 			//temperature: "required",
     		weight: "required"
    		},
 		messages: 
 		{
-     		patient_id: "<?php echo 'Please enter patient number'; ?>",
-			blood_pressure: "<?php echo 'Please enter blood pressure'; ?>",
+     		blood_pressure: "<?php echo 'Please enter blood pressure'; ?>",
     		weight: "<?php echo 'Please enter weight'; ?>"
 		}
 	});

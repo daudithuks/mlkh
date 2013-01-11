@@ -123,8 +123,23 @@ class Invoice extends CI_Model
 		//Run these queries as a transaction, we want to make sure we do all or nothing
 		$this->db->trans_start();
 		
-		if ($this->Consultation->returning($customer_id)){
-			$consultation_id = $this->Consultation->returning($customer_id);
+		if ($this->already_invoiced_test($customer_id,$department)){
+			$invoice_id = $this->already_invoiced_test($customer_id,$department);
+			$this->update($invoices_data,$invoice_id);
+			
+			$this->db->where('invoice_id', $invoice_id);
+			$this->db->delete("invoices_items");
+		}
+		else{
+			$this->db->insert('invoices',$invoices_data);
+			$invoice_id = $this->db->insert_id();
+		}
+		
+		$this->db->from("invoices");
+		$this->db->where('invoice_id', $invoice_id);
+		$consultation_id = $this->db->get()->row()->consultation_id;
+		
+		if ($consultation_id){
 			$status = $this->Consultation->get_status($consultation_id);
 			
 			switch($status)
@@ -152,18 +167,6 @@ class Invoice extends CI_Model
 		
 			$this->db->where('consultation_id',$consultation_id);
 			$this->db->update('consultation',$consultation_data);
-		}
-		
-		if ($this->already_invoiced_test($customer_id,$department)){
-			$invoice_id = $this->already_invoiced_test($customer_id,$department);
-			$this->update($invoices_data,$invoice_id);
-			
-			$this->db->where('invoice_id', $invoice_id);
-			$this->db->delete("invoices_items");
-		}
-		else{
-			$this->db->insert('invoices',$invoices_data);
-			$invoice_id = $this->db->insert_id();
 		}
 
 
@@ -224,8 +227,23 @@ class Invoice extends CI_Model
 		//Run these queries as a transaction, we want to make sure we do all or nothing
 		$this->db->trans_start();
 		
-		if ($this->Consultation->returning($customer_id)){
-			$consultation_id = $this->Consultation->returning($customer_id);
+		if ($this->already_invoiced_test($customer_id,$department)){
+			$invoice_id = $this->already_invoiced_test($customer_id,$department);
+			$this->update($invoices_data,$invoice_id);
+			
+			$this->db->where('invoice_id', $invoice_id);
+			$this->db->delete("invoices_items");
+		}
+		else{
+			$this->db->insert('invoices',$invoices_data);
+			$invoice_id = $this->db->insert_id();
+		}
+
+		$this->db->from("invoices");
+		$this->db->where('invoice_id', $invoice_id);
+		$consultation_id = $this->db->get()->row()->consultation_id;
+		
+		if ($consultation_id){
 			$status = $this->Consultation->get_status($consultation_id);
 			
 			switch($status)
@@ -255,19 +273,6 @@ class Invoice extends CI_Model
 			$this->db->update('consultation',$consultation_data);
 		}
 		
-		if ($this->already_invoiced_test($customer_id,$department)){
-			$invoice_id = $this->already_invoiced_test($customer_id,$department);
-			$this->update($invoices_data,$invoice_id);
-			
-			$this->db->where('invoice_id', $invoice_id);
-			$this->db->delete("invoices_items");
-		}
-		else{
-			$this->db->insert('invoices',$invoices_data);
-			$invoice_id = $this->db->insert_id();
-		}
-
-
 		foreach($items as $line=>$item)
 		{
 			$cur_item_info = $this->Item->get_info($item['item_id']);
@@ -405,7 +410,7 @@ class Invoice extends CI_Model
 		return $invoice_id;
 	}
 	
-	function get_invoice($customer_id,$employee_id=0)
+	function get_invoice($customer_id,$employee_id=null)
 	{
 		if ($employee_id)
 			$where = array('customer_id'=>$customer_id,'processed'=>'0','employee_id'=>$employee_id);
@@ -433,10 +438,12 @@ class Invoice extends CI_Model
 		return $this->db->get()->row()->consultation_id;
 	}
 	
-	function get_pharmacy_consultation($customer_id){
+	function get_pharmacy_consultation($customer_id,$department=null){
 		$this->db->from('consultation');
+		$this->db->join('invoices', 'invoices.consultation_id = consultation.consultation_id');
 		$this->db->where('patient_id',$customer_id);
-		$this->db->order_by("consultation_id", "desc");
+		if ($department) $this->db->where('department',$department);
+		$this->db->order_by("consultation.consultation_id", "desc");
 		return $this->db->get()->row()->consultation_id;
 	}
 	

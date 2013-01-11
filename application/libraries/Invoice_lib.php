@@ -125,11 +125,11 @@ class Invoice_lib
 		$this->CI->session->set_userdata('customer',$customer_id);
 	}
 	
-	function get_invoice($customer_id,$employee_id)
+	function get_invoice($customer_id,$employee_id=null)
 	{
 		foreach($this->CI->Invoice->get_invoice($customer_id,$employee_id)->result() as $row)
 		{
-			$this->add_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -137,7 +137,7 @@ class Invoice_lib
 	{
 		foreach($this->CI->Invoice->get_invoice_test($customer_id,$department)->result() as $row)
 		{
-			$this->add_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id,$row->result);
+			$this->add_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id,$row->result);
 		}
 	}
 
@@ -154,7 +154,7 @@ class Invoice_lib
 		$this->CI->session->set_userdata('sale_mode',$mode);
 	}
 
-	function add_item($item_id,$quantity=1,$age,$check,$price=null,$description=null,$serialnumber=null,$invoiced=null,$result=null)
+	function add_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null,$result=null)
 	{
 		//make sure item exists
 		if(!$this->CI->Item->exists($item_id))
@@ -215,9 +215,7 @@ class Invoice_lib
 			'is_serialized'=>$this->CI->Item->get_info($item_id)->is_serialized,
 			'quantity'=>$quantity,
             'discount'=>$discount,
-			 //bwats edit
-            		'price'=>$check==1 && $age<=5 ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
-			//'price'=>$price!=null ? $price: $this->CI->Item->get_info($item_id)->unit_price,
+			 'price'=>$price!=null ? $price: $this->CI->Item->get_info($item_id)->unit_price,
 			'invoice'=>$invoiced!=null ? $invoiced : 0
 			)
 		);
@@ -291,12 +289,11 @@ class Invoice_lib
 		return -1;
 	}
 
-	function edit_item($line,$description,$serialnumber,$quantity,$discount,$price,$result=null)
+	function edit_item($line,$serialnumber,$quantity,$discount,$price,$result=null)
 	{
 		$items = $this->get_cart();
 		if(isset($items[$line]))
 		{
-			$items[$line]['description'] = $description;
 			$items[$line]['result'] = $result;
 			$items[$line]['serialnumber'] = $serialnumber;
 			$items[$line]['quantity'] = $quantity;
@@ -334,7 +331,7 @@ class Invoice_lib
 
 		foreach($this->CI->Invoice->get_invoice_items($invoice_id)->result() as $row)
 		{
-			$this->add_item($row->item_id,-$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber);
+			$this->add_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber);
 		}
 		$this->set_customer($this->CI->Invoice->get_customer($invoice_id)->person_id);
 	}
@@ -346,7 +343,7 @@ class Invoice_lib
 
 		foreach($this->CI->Invoice->get_invoice_items($invoice_id)->result() as $row)
 		{
-			$this->add_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber);
+			$this->add_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber);
 		}
 		$this->set_customer($this->CI->Invoice->get_customer($invoice_id)->person_id);
 
@@ -440,6 +437,17 @@ class Invoice_lib
 		}
 
 		return $total;
+	}
+	
+	function get_total_discount()
+	{
+		$discount = 0;
+		foreach($this->get_cart() as $item)
+		{
+            $discount+=($item['price']*$item['quantity']-$item['price']*$item['quantity']*(100-$item['discount'])/100);
+		}
+
+		return $discount;
 	}
 }
 ?>

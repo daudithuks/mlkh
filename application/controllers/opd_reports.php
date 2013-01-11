@@ -68,7 +68,7 @@ class OPD_Reports extends Secure_area
 				);
 			foreach ($report_data as $line=>$row) {
 				$gender = $row['gender'];
-				$clinic = $row['consultation_type'];
+				$clinic = ($row['consultation_type']=='paeds')?'general':$row['consultation_type'];
 				$visit = ($row['visit_status'] == 0)?'new':'revisit';
 				$consultation_date = strtotime($row['consultation_time']);
 				$dob = strtotime($row['age']);
@@ -165,7 +165,7 @@ class OPD_Reports extends Secure_area
 				);
 			foreach ($report_data as $line=>$row) {
 				$gender = $row['gender'];
-				$clinic = $row['consultation_type'];
+				$clinic = ($row['consultation_type']=='paeds')?'general':$row['consultation_type'];
 				$visit = ($row['visit_status'] == 0)?'new':'revisit';
 				$consultation_date = strtotime($row['consultation_time']);
 				$dob = strtotime($row['age']);

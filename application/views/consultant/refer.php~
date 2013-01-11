@@ -15,6 +15,10 @@ echo form_open($controller_name.'/save_referral/',array('id'=>'refer_form'));
 <?php echo form_label('Doctor:', 'refer_doctor',array('class'=>'wide')); ?>
 	<div class='form_field'>
 	<?php echo form_input(array(
+		'name'=>'refer_doctor_name',
+		'id'=>'refer_doctor_name')
+	);?>
+<?php echo form_hidden(array(
 		'name'=>'refer_doctor',
 		'id'=>'refer_doctor')
 	);?>
@@ -58,14 +62,17 @@ echo form_close();
 //validation and submit handling
 $(document).ready(function()
 {
-	$("#refer_doctor").autocomplete("<?php echo site_url($controller_name.'/suggest_refer_doctor');?>",{
+	$("#refer_doctor_name").autocomplete("<?php echo site_url($controller_name.'/suggest_refer_doctor');?>",{
 		max:100,
 		minChars:0,
 		delay:10,
 		formatItem: function(row) {	return row[1];		}
 		});
-    $("#refer_doctor").result(function(event, data, formatted){});
-	$("#refer_doctor").search();
+    $("#refer_doctor_name").result(function(event, data, formatted){
+		$("#refer_doctor_name").val(data[1]);
+		$("#refer_doctor").val(data[0]);
+});
+	$("#refer_doctor_name").search();
 
 
 	$('#refer_form').validate({

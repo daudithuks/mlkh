@@ -18,10 +18,7 @@ echo form_open($controller_name.'/save_referral/',array('id'=>'refer_form'));
 		'name'=>'refer_doctor_name',
 		'id'=>'refer_doctor_name')
 	);?>
-<?php echo form_hidden(array(
-		'name'=>'refer_doctor',
-		'id'=>'refer_doctor')
-	);?>
+<input type="hidden" name="refer_doctor" id="refer_doctor" />
 	</div>
 </div>
 

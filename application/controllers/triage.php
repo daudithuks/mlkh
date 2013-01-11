@@ -20,6 +20,17 @@ class Triage extends Person_controller
 		$data['manage_table']=get_add_triage_manage_table( $this->Customer->get_all_queued_triage( $config['per_page'], $this->uri->segment( $config['uri_segment'] ) ), $this );
 		$this->load->view('triage/manage',$data);
 	}
+	
+	function refresh()
+	{
+		$admission_queue=$this->input->post('admission_queue');
+		
+		$data['admission_queue']=$admission_queue;
+		$data['controller_name']=strtolower(get_class());
+		$data['form_width']=$this->get_form_width();
+		$data['manage_table']=get_add_triage_manage_table( $this->Customer->get_all_triage_filtered($admission_queue),$this);
+		$this->load->view('triage/manage',$data);
+	}
 
 	function get_row()
 	{
@@ -55,6 +66,7 @@ class Triage extends Person_controller
 	{
 		//$data['triage_info']=$this->Customer->get_info_triage($customer_id);
 		$data['patient_id'] = $customer_id;
+		$data['person_info']=$this->Customer->get_info($customer_id);
 		$this->load->view("triage/form",$data);
 	}
 	
@@ -87,12 +99,12 @@ class Triage extends Person_controller
 		if($this->Customer->save_triage($person_data,$customer_id))
 		{
 			echo json_encode(array('success'=>true,'message'=>$this->lang->line('triage_successful_adding').' '.
-			$person_data['patient_id'],'person_id'=>$patient_id));
+			$person_data['patient_id'],'person_id'=>$customer_id));
 		}
 		else//failure
 		{	
 			echo json_encode(array('success'=>false,'message'=>$this->lang->line('triage_error_adding_updating').' '.
-			$person_data['patient_id'],'person_id'=>$patient_id));
+			$person_data['patient_id'],'person_id'=>$customer_id));
 		}
 		//$this->_reload();
 	}
@@ -104,14 +116,14 @@ class Triage extends Person_controller
 	*/
 	function delete()
 	{
-		/*$customers_to_delete=$this->input->post('ids');
+		$customers_to_delete=$this->input->post('ids');
 		
-		if($this->Customer->delete_list($customers_to_delete))
+		if($this->Customer->delete_triage_list($customers_to_delete))
 		{
 			echo json_encode(array('success'=>true,'message'=>$this->lang->line('triage_successful_deleted').' '.
 			count($customers_to_delete).' '.$this->lang->line('triage_one_or_multiple')));
 		}
-		else*/
+		else
 		{
 			echo json_encode(array('success'=>false,'message'=>$this->lang->line('triage_cannot_be_deleted')));
 		}

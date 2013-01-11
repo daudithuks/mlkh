@@ -79,10 +79,11 @@ function get_add_triage_manage_table($people,$controller)
 	$headers = array('<input type="checkbox" id="select_all" />', 
 	'Name',
 	'Patient Number',
+	'Age',
 	'Gender',
-	'Civil Status',
+	'Queue',
 	'Queue Position',
-	$CI->lang->line('common_phone_number'),
+	'Clinic',
 	'&nbsp');
 	
 	$table.='<thead><tr>';
@@ -111,7 +112,7 @@ function get_add_triage_manage_table_data_rows($people,$controller)
 	
 	if($people->num_rows()==0)
 	{
-		$table_data_rows.="<tr><td colspan='6'><div class='warning_message' style='padding:7px;'>".$CI->lang->line('common_no_persons_to_display')."</div></tr></tr>";
+		$table_data_rows.="<tr><td colspan='9'><div class='warning_message' style='padding:7px;'>".$CI->lang->line('common_no_persons_to_display')."</div></tr></tr>";
 	}
 	
 	return $table_data_rows;
@@ -124,13 +125,14 @@ function get_add_triage_data_row($person,$controller)
 	$width = $controller->get_form_width();
 
 	$table_data_row='<tr>';
-	$table_data_row.="<td width='5%'><input type='checkbox' id='person_$person->person_id' value='".$person->person_id."'/></td>";
+	$table_data_row.="<td width='2%'><input type='checkbox' id='person_$person->person_id' value='".$person->person_id."'/></td>";
 	$table_data_row.='<td width="20%">'.$person->first_name.' '.$person->middle_name.' '.$person->last_name.'</td>';
-	$table_data_row.='<td width="15%">'.$CI->Appconfig->get('patient_prefix').$person->person_id.'</td>';
-	$table_data_row.='<td width="10%">'.ucfirst($person->gender).'</td>';
-	$table_data_row.='<td width="15%">'.ucfirst($person->civil_status).'</td>';
-	$table_data_row.='<td width="20%">'.$person->sale_id.'</td>';
-	$table_data_row.='<td width="15%">'.character_limiter($person->phone_number,15).'</td>';		
+	$table_data_row.='<td width="10%">'.$CI->Appconfig->get('patient_prefix').$person->person_id.'</td>';
+	$table_data_row.='<td width="15%">'.date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($person->age))))->format('%y yrs %m mths %d days').'</td>';
+	$table_data_row.='<td width="5%">'.ucfirst($person->gender).'</td>';
+	$table_data_row.='<td width="10%">'.($person->encounter_queue=='Undefined' ? '&nbsp' : $person->encounter_queue).'</td>';
+	$table_data_row.='<td width="5%">'.$person->encounter_id.'</td>';
+	$table_data_row.='<td width="20%">'.$person->opd_service_name.'</td>';		
 	$table_data_row.='<td width="5%">'.anchor($controller_name."/view/$person->person_id/width:$width", $CI->lang->line('common_add'),array('class'=>'thickbox','title'=>$CI->lang->line($controller_name.'_add'))).'</td>';		
 	$table_data_row.='</tr>';
 	
@@ -214,13 +216,13 @@ function get_admissions_manage_table($people,$controller)
 	$headers = array('<input type="checkbox" id="select_all" />', 
 	'Name',
 	'Patient Number',
-	'Gender',
 	'Age',
-	'Queue Position',
+	'Gender',
 	'Admission Queue',
-	'Allocation',
-	'Edit',
-	'&nbsp');
+	'Queue Position',
+	'&nbsp',
+	'&nbsp',
+	);
 	
 	$table.='<thead><tr>';
 	foreach($headers as $header)
@@ -258,14 +260,14 @@ function get_admissions_data_row($person,$controller)
 	$width = $controller->get_form_width();
 
 	$table_data_row='<tr>';
-	$table_data_row.="<td width='5%'><input type='checkbox' id='person_$person->person_id' value='".$person->person_id."'/></td>";
+	$table_data_row.="<td width='2%'><input type='checkbox' id='person_$person->person_id' value='".$person->person_id."'/></td>";
 	$table_data_row.='<td width="20%">'.$person->first_name.' '.$person->middle_name.' '.$person->last_name.'</td>';
-	$table_data_row.='<td width="15%">'.$CI->Appconfig->get('patient_prefix').$person->person_id.'</td>';
-	$table_data_row.='<td width="10%">'.ucfirst($person->gender).'</td>';
+	$table_data_row.='<td width="10%">'.$CI->Appconfig->get('patient_prefix').$person->person_id.'</td>';
 	$table_data_row.='<td width="15%">'.date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($person->age))))->format('%y yrs %m mths %d days').'</td>';
-	$table_data_row.='<td width="20%">'.$person->queue_sale_id.'</td>';
+	$table_data_row.='<td width="5%">'.ucfirst($person->gender).'</td>';
 	$table_data_row.='<td width="15%">'.$person->queue_admission_department.'</td>';
-	$table_data_row.='<td width="5%">'.anchor($controller_name."/view_allocate/$person->person_id/width:$width", $CI->lang->line('common_allocate'),array('class'=>'thickbox','title'=>$CI->lang->line($controller_name.'_allocate'))).'</td>';		
+	$table_data_row.='<td width="5%">'.$person->queue_sale_id.'</td>';
+	$table_data_row.='<td width="5%">'.anchor($controller_name."/view_allocate/$person->person_id/".(isset($person->queue_admission_department) ? $person->queue_admission_department : "Undefined")."/width:$width", $CI->lang->line('common_allocate'),array('class'=>'thickbox','title'=>$CI->lang->line($controller_name.'_allocate'))).'</td>';		
 	$table_data_row.='<td width="5%">'.anchor($controller_name."/view/$person->person_id/width:$width", $CI->lang->line('common_add'),array('class'=>'thickbox','title'=>$CI->lang->line($controller_name.'_add'))).'</td>';		
 	$table_data_row.='</tr>';
 	

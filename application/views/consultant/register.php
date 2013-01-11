@@ -104,7 +104,7 @@ if (isset($success))
 					echo anchor($controller_name."/view_referrer_notes/$returned_referrals","Referee's Notes",array('class'=>'thickbox none','title'=>'Consultation Notes'))."<br />";
 				echo anchor($controller_name."/consultation_history/",'Consultation History')."<br />";
 //&& count($complaints)>0
-				if(isset($customer))
+				if(isset($customer) && isset($consultation_id))
 				{
 					//echo anchor("lab_request/#",'Lab Test Request',array('class'=>'thickbox none','title'=>'Lab Test Request'))."<br />";
 	//				echo anchor("invoices/#",'X Ray Request',array('class'=>'thickbox none','title'=>'X Ray Request'))."<br />";
@@ -142,12 +142,13 @@ if (isset($success))
 
 			<?php if(isset($customer)){?>
             <div id="finish_sale">
-            <?php //if(count($complaints)>0){ ?>
+            
+            <?php if(isset($consultation_id)){?>
             <?php echo anchor($controller_name."/refer/width:425",
 	"<div class='small_button' id='refer_sale_button' style='float:right;margin-top:5px;'><span>Refer</span></div>",
 	array('class'=>'thickbox none','title'=>'Refer Patient'));
 	?>
-    		<?php //} ?>
+    		<?php } ?>
             <div class="clearfix" style="margin-bottom:1px;">&nbsp;</div>
 				<?php echo form_open($controller_name."/save_consultation",array('id'=>'save_consultation_form')); ?>	
 				<div class='small_button' id='finish_sale_button' style='float:left;margin-top:5px;'><span>Save</span></div>

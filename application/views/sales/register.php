@@ -48,6 +48,7 @@ else
 <th style="width:35%;"><?php echo $this->lang->line('sales_item_name'); ?></th>
 <th style="width:10%;"><?php echo $this->lang->line('sales_price'); ?></th>
 <th style="width:10%;"><?php echo $this->lang->line('sales_quantity'); ?></th>
+<th style="width:10%;"><?php echo $this->lang->line('sales_discount'); ?></th>
 <th style="width:15%;"><?php echo $this->lang->line('sales_total'); ?></th>
 <th style="width:10%;"></th>
 <th style="width:10%;"></th>
@@ -109,6 +110,12 @@ else
         	{
         		echo form_input(array('name'=>'quantity','value'=>$item['quantity'],'size'=>'2'));
         	}
+		?>
+		</td>
+        
+        <td>
+		<?php
+        	echo $item['discount'];
 		?>
 		</td>
 
@@ -193,10 +200,10 @@ else
 			</td>
 			<td>
 				<?php echo form_dropdown('section_queue',array(
-					'1'=>'Adults',
-					'2'=>'Children',
+					'1'=>'General OPD',
+					'2'=>'Paeds',
 					'3'=>'MCH',
-					'4'=>'Special Clinic',
+					'4'=>'Special Clinics',
 					'5'=>'Other'), 'id="section_queue"');?>
 			</td>
 			</tr> -->
@@ -280,10 +287,10 @@ else
 				<label id="section_queue_label" for="section_queue"> <?php echo $this->lang->line('sales_attendance').':   ';?>
 				<?php echo form_dropdown('section_queue',array(
 					'0'=>'',
-					'Adults'=>'Adults',
-					'Children'=>'Children',
+					'General OPD'=>'General OPD',
+					'Paeds'=>'Paeds',
 					'MCH'=>'MCH',
-					'Special Clinic'=>'Special Clinic',
+					'Special Clinics'=>'Special Clinics',
 					'Other'=>'Other'), 'id="section_queue"');?>
 				<br /><br />
 					

@@ -65,13 +65,23 @@ $(document).ready(function()
 		{
 			first_name: "required",
 			last_name: "required",
-    		email: "email"
+    			email: "email",
+			visit_status: "required",
+			age: "required",
+			next_kin: "required",
+			next_kin_tel: "required"
+			
    		},
 		messages: 
 		{
      		first_name: "<?php echo $this->lang->line('common_first_name_required'); ?>",
      		last_name: "<?php echo $this->lang->line('common_last_name_required'); ?>",
-     		email: "<?php echo $this->lang->line('common_email_invalid_format'); ?>"
+     		email: "<?php echo $this->lang->line('common_email_invalid_format'); ?>",
+		visit_status: "<?php echo 'Visit Status required'; ?>",
+		age: "<?php echo 'Date of Birth required'; ?>",
+		next_kin: "<?php echo 'Next of Kin name required'; ?>",
+		next_kin_tel: "<?php echo 'Next of Kin mobile number required'; ?>"
+
 		}
 	});
 });

@@ -40,7 +40,7 @@ class Sales extends Secure_area
 		$customer_id = $this->input->post("customer");
 		$this->sale_lib->set_customer($customer_id);
 		$this->sale_lib->get_invoice($customer_id);
-		$this->sale_lib->get_waiver($customer_id);
+		//$this->sale_lib->get_waiver($customer_id);
 		$this->_reload();
 	}
 	
@@ -425,7 +425,7 @@ class Sales extends Secure_area
 			$data['customer_email']=$info->email;
 			
 			$this->sale_lib->get_invoice($customer_id);
-			$this->sale_lib->get_waiver($customer_id);
+			//$this->sale_lib->get_waiver($customer_id);
 		}
 		
 		$person_info = $this->Employee->get_logged_in_employee_info();

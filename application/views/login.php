@@ -32,7 +32,8 @@ $(document).ready(function()
 		<div class="form_field">
 		<?php echo form_input(array(
 		'name'=>'username', 
-		'size'=>'20')); ?>
+		'size'=>'20',
+		'autocomplete'=>'off')); ?>
 		</div>
 
 		<div class="form_field_label"><?php echo $this->lang->line('login_password'); ?>: </div>

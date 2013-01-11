@@ -34,14 +34,12 @@ if (isset($success))
 <table id="register">
 <thead>
 <tr>
-<th style="width:30%;"><?php echo $this->lang->line('invoices_item_number'); ?></th>
-<th style="width:35%;"><?php echo $this->lang->line('invoices_item_name'); ?></th>
-<th style="width:10%;"><?php //echo $this->lang->line('invoices_price'); ?></th>
-<th style="width:10%;"><?php //echo $this->lang->line('invoices_quantity'); ?></th>
-<th style="width:35%;"><?php echo $this->lang->line('invoices_results'); ?></th>
-<th style="width:15%;"><?php //Secho $this->lang->line('invoices_total'); ?></th>
+<th style="width:10%;"><?php echo $this->lang->line('invoices_item_number'); ?></th>
+<th style="width:30%;"><?php echo $this->lang->line('invoices_item_name'); ?></th>
+<th style="width:30%;"><?php echo 'Description'; ?></th>
+<th style="width:30%;"><?php echo $this->lang->line('invoices_results'); ?></th>
 
-<th style="width:10%;"></th>
+
 <th style="width:10%;"></th>
 </tr>
 </thead>
@@ -73,35 +71,10 @@ else
 		?>
         </td>
 
-
-
-		<?php if ($items_module_allowed)
-		{
-		?>
-			<td><?php echo form_hidden(array('name'=>'price','value'=>$item['price'],'size'=>'6'));?></td>
-		<?php
-		}
-		else
-		{
-		?>
-			<td><?php $item['price']; ?></td>
-			<?php echo form_hidden('price',$item['price']); ?>
-		<?php
-		}
-		?>
-
 		<td>
 		<?php
-        	if($item['is_serialized']==1)
-        	{
-        		 echo $item['quantity'];
-        		echo form_hidden('quantity',$item['quantity']);
-        	}
-        	else
-        	{
-        		echo form_hidden(array('name'=>'quantity','value'=>$item['quantity'],'size'=>'2'));
-        	}
-		?>
+        		echo $item['description'];
+ 		?>
 		</td>
 
 		<td>
@@ -229,6 +202,8 @@ $(document).ready(function()
 			return row[1];
 		}
     });
+	
+	var queue_reload = setInterval(function(){$("#queue_section").load('<?php echo site_url("xray/refresh_queue"); ?>');},10000);
 
     $("#item").result(function(event, data, formatted)
     {

@@ -125,7 +125,7 @@ class Dispense_lib
 		$this->CI->session->set_userdata('customer',$customer_id);
 	}
 	
-	function get_invoice($customer_id,$employee_id)
+	function get_invoice($customer_id,$employee_id=0)
 	{
 		foreach($this->CI->Invoice->get_invoice($customer_id,$employee_id)->result() as $row)
 		{

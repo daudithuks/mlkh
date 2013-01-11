@@ -310,7 +310,7 @@ class Consultant_lib
 		$this->CI->session->set_userdata('lab_cart',$cart_data);
 	}
 	
-	function add_lab_item($item_id,$quantity=1,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_lab_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
 		//bwats start pass check and age in the add_item()
 		//get the status whether an item is charged under five or not
@@ -383,7 +383,7 @@ class Consultant_lib
 			'quantity'=>$quantity,
             'discount'=>$discount,
 			//bwats edit
-            		'price'=>$check==1 && ($age<=5 || $age>=60)  ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
+            		'price'=>$check==1 && ($age<=5)  ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
 			//'price'=>$price!=null ? $price: $this->CI->Item->get_info($item_id)->unit_price,
 			'invoice'=>$invoiced!=null ? $invoiced : 0
 			)
@@ -422,7 +422,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"Lab")->result() as $row)
 		{
-			$this->add_lab_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_lab_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -444,7 +444,7 @@ class Consultant_lib
 		$this->CI->session->set_userdata('xray_cart',$cart_data);
 	}
 	
-	function add_xray_item($item_id,$quantity=1,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_xray_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
 		//bwats start pass check and age in the add_item()
 		//get the status whether an item is charged under five or not
@@ -517,7 +517,7 @@ class Consultant_lib
 			'quantity'=>$quantity,
             'discount'=>$discount,
 			//bwats edit
-            		'price'=>$check==1 && ($age<=5 || $age>=60) ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
+            		'price'=>$check==1 && ($age<=5) ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
 			//'price'=>$price!=null ? $price: $this->CI->Item->get_info($item_id)->unit_price,
 			'invoice'=>$invoiced!=null ? $invoiced : 0
 			)
@@ -556,7 +556,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"X-Ray")->result() as $row)
 		{
-			$this->add_xray_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_xray_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -578,7 +578,7 @@ class Consultant_lib
 		$this->CI->session->set_userdata('service_cart',$cart_data);
 	}
 	
-	function add_service_item($item_id,$quantity=1,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_service_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
 		//bwats start pass check and age in the add_item()
 		//get the status whether an item is charged under five or not
@@ -651,7 +651,7 @@ class Consultant_lib
 			'quantity'=>$quantity,
             'discount'=>$discount,
 			 //bwats edit
-            		'price'=>$check==1 && ($age<=5 || $age>=60) ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
+            		'price'=>$check==1 && ($age<=5) ? 0 : $this->CI->Item->get_info($item_id)->unit_price,
 			//'price'=>$price!=null ? $price: $this->CI->Item->get_info($item_id)->unit_price,
 			'invoice'=>$invoiced!=null ? $invoiced : 0
 			)
@@ -690,7 +690,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"Nursing")->result() as $row)
 		{
-			$this->add_service_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_service_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	

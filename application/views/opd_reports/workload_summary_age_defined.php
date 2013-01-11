@@ -30,11 +30,11 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['general']['revisit']['male']; ?></td>
                 <td><?php echo $data['general']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['general']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['general']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['general']['new']['male'] + $data['general']['revisit']['male']; ?></td>
                 <td><?php echo $data['general']['new']['female'] + $data['general']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['general']['new']) + array_sum($data['general']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['general']['new']) + array_sum($data['general']['revisit']); ?></td></tr>
             
             <tr><th colspan="5" bgcolor="#999999">Special Clinics</th></tr>
             <tr>
@@ -47,7 +47,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['ent']['revisit']['male']; ?></td>
                 <td><?php echo $data['ent']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['ent']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['ent']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['ent']['new']['male'] + $data['ent']['revisit']['male']; ?></td>
                 <td><?php echo $data['ent']['new']['female'] + $data['ent']['revisit']['female']; ?></td>
@@ -63,7 +63,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['eye']['revisit']['male']; ?></td>
                 <td><?php echo $data['eye']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['eye']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['eye']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['eye']['new']['male'] + $data['eye']['revisit']['male']; ?></td>
                 <td><?php echo $data['eye']['new']['female'] + $data['eye']['revisit']['female']; ?></td>
@@ -79,7 +79,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['dental']['revisit']['male']; ?></td>
                 <td><?php echo $data['dental']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['dental']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['dental']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['dental']['new']['male'] + $data['dental']['revisit']['male']; ?></td>
                 <td><?php echo $data['dental']['new']['female'] + $data['dental']['revisit']['female']; ?></td>
@@ -95,7 +95,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['tb']['revisit']['male']; ?></td>
                 <td><?php echo $data['tb']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['tb']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['tb']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['tb']['new']['male'] + $data['tb']['revisit']['male']; ?></td>
                 <td><?php echo $data['tb']['new']['female'] + $data['tb']['revisit']['female']; ?></td>
@@ -111,7 +111,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['orthopaedic']['revisit']['male']; ?></td>
                 <td><?php echo $data['orthopaedic']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['orthopaedic']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['orthopaedic']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['orthopaedic']['new']['male'] + $data['orthopaedic']['revisit']['male']; ?></td>
                 <td><?php echo $data['orthopaedic']['new']['female'] + $data['orthopaedic']['revisit']['female']; ?></td>
@@ -128,7 +128,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['cwc']['revisit']['male']; ?></td>
                 <td><?php echo $data['cwc']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['cwc']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['cwc']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['cwc']['new']['male'] + $data['cwc']['revisit']['male']; ?></td>
                 <td><?php echo $data['cwc']['new']['female'] + $data['cwc']['revisit']['female']; ?></td>
@@ -144,7 +144,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['anc']['revisit']['male']; ?></td>
                 <td><?php echo $data['anc']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['anc']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['anc']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['anc']['new']['male'] + $data['anc']['revisit']['male']; ?></td>
                 <td><?php echo $data['anc']['new']['female'] + $data['anc']['revisit']['female']; ?></td>
@@ -160,7 +160,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['pnc']['revisit']['male']; ?></td>
                 <td><?php echo $data['pnc']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['pnc']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['pnc']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['pnc']['new']['male'] + $data['pnc']['revisit']['male']; ?></td>
                 <td><?php echo $data['pnc']['new']['female'] + $data['pnc']['revisit']['female']; ?></td>
@@ -176,7 +176,7 @@ if($export_excel == 1){
             <tr><th>Revisit</th>
             	<td><?php echo $data['fp']['revisit']['male']; ?></td>
                 <td><?php echo $data['fp']['revisit']['female']; ?></td>
-                <td><?php echo array_sum($data['fp']['new']); ?></td></tr>
+                <td><?php echo array_sum($data['fp']['revisit']); ?></td></tr>
             <tr><th>Total</th>
                 <td><?php echo $data['fp']['new']['male'] + $data['fp']['revisit']['male']; ?></td>
                 <td><?php echo $data['fp']['new']['female'] + $data['fp']['revisit']['female']; ?></td>

@@ -310,7 +310,7 @@ class Consultant_lib
 		$this->CI->session->set_userdata('lab_cart',$cart_data);
 	}
 	
-	function add_lab_item($item_id,$quantity=1,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_lab_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
 		//bwats start pass check and age in the add_item()
 		//get the status whether an item is charged under five or not
@@ -422,7 +422,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"Lab")->result() as $row)
 		{
-			$this->add_lab_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_lab_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -444,7 +444,7 @@ class Consultant_lib
 		$this->CI->session->set_userdata('xray_cart',$cart_data);
 	}
 	
-	function add_xray_item($item_id,$quantity=1,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_xray_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
 		//bwats start pass check and age in the add_item()
 		//get the status whether an item is charged under five or not
@@ -556,7 +556,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"X-Ray")->result() as $row)
 		{
-			$this->add_xray_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_xray_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -578,8 +578,19 @@ class Consultant_lib
 		$this->CI->session->set_userdata('service_cart',$cart_data);
 	}
 	
-	function add_service_item($item_id,$quantity=1,$age,$check,$price=null,$description=null,$serialnumber=null,$invoiced=null)
+	function add_service_item($item_id,$quantity=1,$discount=0,$price=null,$description=null,$serialnumber=null,$invoiced=null)
 	{
+		//bwats start pass check and age in the add_item()
+		//get the status whether an item is charged under five or not
+		$check=$this->CI->Item->get_info($item_id)->items_under_five;
+		//get customer_id
+		$customer_id=$this->get_customer();
+		//get details of customer
+		$info=$this->CI->Customer->get_info($customer_id);
+		//get age of customer
+		$age = date_diff(date_create(date("Y-m-d")),date_create(date("Y-m-d",strtotime($info->age))))->format('%y');
+		//end bwats
+
 		//make sure item exists
 		if(!$this->CI->Item->exists($item_id))
 		{
@@ -679,7 +690,7 @@ class Consultant_lib
 	{
 		foreach($this->CI->Consultation->get_invoice($customer_id,"Nursing")->result() as $row)
 		{
-			$this->add_service_item($row->item_id,$row->quantity_purchased,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_service_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	

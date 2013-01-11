@@ -329,6 +329,45 @@ if (isset($examination['pelvic_penis_describe'])) echo " (".str_replace("\n", "<
 </tbody></table>
 <?php //} ?>
 
+<?php //if(!empty($examination['eye'])){ ?>
+<table><thead><tr><th>Eye</th></tr></thead><tfoot><tr><td>&nbsp;</td></tr></tfoot>
+<tbody valign="top">
+<?php if(!empty($examination['eye_vision_re'])){ ?>
+<tr><td style="font-style:italic;">Vision(RE):&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_vision_re']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_vision_le'])){ ?>
+<tr><td style="font-style:italic;">Vision(LE):&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_vision_le']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_lids'])){ ?>
+<tr><td style="font-style:italic;">Lids:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_lids']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_cornea'])){ ?>
+<tr><td style="font-style:italic;">Cornea:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_cornea']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_ac'])){ ?>
+<tr><td style="font-style:italic;">A/C:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_ac']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_pupil'])){ ?>
+<tr><td style="font-style:italic;">Pupil:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_pupil']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_pupil'])){ ?>
+<tr><td style="font-style:italic;">Pupil:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_pupil']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_retina'])){ ?>
+<tr><td style="font-style:italic;">Retina:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_retina']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_disc'])){ ?>
+<tr><td style="font-style:italic;">Disc:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_disc']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_macula'])){ ?>
+<tr><td style="font-style:italic;">Macula:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_macula']); ?></td></tr>
+<?php } ?>
+<?php if(!empty($examination['eye_examination_remarks'])){ ?>
+<tr><td style="font-style:italic;">Other Remarks:&emsp;</td><td><?php echo str_replace("\n", "<br />", $examination['eye_examination_remarks']); ?></td></tr>
+<?php } ?>
+</tbody></table>
+<?php //} ?>
+
 <?php if(!empty($examination['skin'])){ ?>
 <table><thead><tr><th>Skin</th></tr></thead><tfoot><tr><td>&nbsp;</td></tr></tfoot>
 <tbody><tr><td><?php echo str_replace("\n", "<br />", $examination['skin']); ?></td></tr></tbody></table>

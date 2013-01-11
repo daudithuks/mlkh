@@ -106,7 +106,7 @@ class Sale extends CI_Model
 			$admission_queue=array
 			(
 				'queue_customer_id'=>$sales_data['customer_id'],
-				'queue_sale_id'=>$sales_payments_data['sale_id'],
+				'queue_sale_id'=>$sale_id,
 				'queue_admission_department'=>$section
 			);
 			if ($admission_queue['queue_admission_department']!='0') {

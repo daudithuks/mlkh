@@ -57,6 +57,7 @@
 <?php echo form_label('Visit Satus:', 'visit_status',array('class'=>'required')); ?>
 	<div class='form_field'>
 	<?php echo form_dropdown('visit_status',array(
+		''=>'',
 		'0'=>'Re-Attendance',
 		'1'=>'New Patient'),
 		$person_info->visit_status	);?>
@@ -76,13 +77,12 @@
 </div>
 
 <div class="field_row clearfix">
-<?php echo form_label('Date of Birth:', ' age'); ?>
+<?php echo form_label('Date of Birth: MM/DD/YYYY', ' age',array('class'=>'required')); ?>
         <div class='form_field'>
         <?php 
 			$dob = explode('-',$person_info->age);
 			
-			if($dob[0] != 0000) $age = $dob[2]."/".$dob[1]."/".$dob[0];
-			else $age = '01/01/1900'; 
+			if($dob[0] != 0000) $age = $dob[2]."/".$dob[1]."/".$dob[0]; 
 			echo form_input(array(
                 'name'=>'age',
                 'id'=>'age',
@@ -94,7 +94,7 @@
 
 
 <div class="field_row clearfix">	
-<?php echo form_label('Next of Kin:', ' next_kin'); ?>
+<?php echo form_label('Next of Kin:', ' next_kin',array('class'=>'required')); ?>
 	<div class='form_field'>
 	<?php echo form_input(array(
 		'name'=>'next_kin',
@@ -105,7 +105,7 @@
 </div>
 
 <div class="field_row clearfix">	
-<?php echo form_label('Next of Kin Phone:', 'next_kin_tel'); ?>
+<?php echo form_label('Next of Kin Phone:', 'next_kin_tel',array('class'=>'required')); ?>
 	<div class='form_field'>
 	<?php echo form_input(array(
 		'name'=>'next_kin_tel',

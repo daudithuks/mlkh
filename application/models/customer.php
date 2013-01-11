@@ -28,17 +28,42 @@ class Customer extends Person
 		$this->db->offset($offset);
 		return $this->db->get();		
 	}
+	
+	function get_all_queued_filtered($admission_queue = null)
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id','inner');		
+		$this->db->join('admission_queue','customers.person_id=admission_queue.queue_customer_id');	
+		if ($admission_queue) $this->db->where('queue_admission_department',$admission_queue);
+		$this->db->where('deleted',0);
+		$this->db->order_by("queue_sale_id", "asc");
+		return $this->db->get();		
+	}
 
 	function get_all_queued_triage($limit=10000, $offset=0)
 	{
 		$this->db->from('customers');
 		$this->db->join('people','customers.person_id=people.person_id','inner');		
 		$this->db->join('encounter','customers.person_id=encounter.patient_id');
+		$this->db->join('outpatient_services','outpatient_services.opd_service_abv=encounter.encounter_type');
 		$this->db->where('deleted',0);
 		$this->db->where('encounter_status','0');
 		$this->db->order_by("encounter_start", "asc");
 		$this->db->limit($limit);
 		$this->db->offset($offset);
+		return $this->db->get();		
+	}
+	
+	function get_all_triage_filtered($admission_queue = null )
+	{
+		$this->db->from('customers');
+		$this->db->join('people','customers.person_id=people.person_id','inner');		
+		$this->db->join('encounter','customers.person_id=encounter.patient_id');
+		$this->db->join('outpatient_services','outpatient_services.opd_service_abv=encounter.encounter_type');
+		$this->db->where('deleted',0);
+		$this->db->where('encounter_status','0');
+		if ($admission_queue) $this->db->where("(encounter_queue = '$admission_queue' OR opd_category = '$admission_queue')");
+		$this->db->order_by("encounter_start", "asc");
 		return $this->db->get();		
 	}
 	
@@ -306,6 +331,19 @@ class Customer extends Person
 	{
 		$this->db->where_in('person_id',$customer_ids);
 		return $this->db->update('customers', array('deleted' => 1));
+ 	}
+	
+	function delete_triage_list($customer_ids)
+	{
+		$this->db->where_in('patient_id',$customer_ids);
+		$this->db->where('encounter_status','0');
+		return $this->db->delete('encounter');
+ 	}
+	
+	function delete_admissions_list($customer_ids)
+	{
+		$this->db->where_in('queue_customer_id',$customer_ids);
+		return $this->db->delete('admission_queue');
  	}
  	
  	/*

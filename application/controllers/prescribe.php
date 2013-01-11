@@ -149,15 +149,18 @@ class Prescribe extends Secure_area {
 	//save to db, shida zingine ziko hapa
 	function complete()
 	{
+		$customer_id = $this->prescribe_lib->get_customer();
+		$employee_id = $this->Employee->get_logged_in_employee_info()->person_id;
 		if (!$this->session->userdata('presc_cart')) {
 				$this->_reload();
 		}else{
 			$current_cart = $this->session->userdata('presc_cart');
 			$invoice_data = array(
 				'invoice_time' => date('Y-m-d H:i:s'),
-				'customer_id' =>  $this->prescribe_lib->get_customer(),
-				'employee_id' => $this->Employee->get_logged_in_employee_info()->person_id,
+				'customer_id' =>  $customer_id,
+				'employee_id' => $employee_id,
 				'department'=>'Pharmacy',
+				'consultation_id'=> $this->Consultation->returning($customer_id,$employee_id),
 			);
 			//save values to db and take care of the pre processing of items
 			//unset all values from session and allow new one to start and reload page

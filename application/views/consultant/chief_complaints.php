@@ -408,7 +408,8 @@
     <tr><td>
     <?php 
 		$options = array(
-                  'redness and itching||eye'  => 'redness and itching',
+                  'itching||eye'  => 'itching',
+				'redness||eye'  => 'redness',
 				  'pain||eye'  => 'pain',
 				  'tearing||eye'  => 'tearing',
 				  'discharge||eye'  => 'discharge',
@@ -680,7 +681,7 @@ function duration(option)
 		if (info.length == 1) info[1] = "";
 		else info[1] += ": ";
 		
-		var duration = prompt("description/duration",value[2]);
+		var duration = prompt("description/duration",(typeof value[2])=='undefined'?'':value[2]);
 		if(duration!=null && duration!="") 
 		{
 			option.value = value[0] + "||" + value[1] + "||" + duration;

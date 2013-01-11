@@ -64,7 +64,7 @@ class Consultation extends CI_Model
 		return $consultation_id;
 	}
 	
-	function discharge($consultation_id,$patient_id=null,$consultant_id=null)
+	function discharge($consultation_id,$patient_id=null,$consultant_id=null,$department=null)
 	{
 		$consultation_data = array(
 			'consultation_status'=>3
@@ -73,8 +73,8 @@ class Consultation extends CI_Model
 		$this->db->update('consultation',$consultation_data);
 		
 		if ($patient_id && $consultant_id){
-			if ($this->referred($patient_id,$consultant_id)){
-				$referral_id = $this->referral_id($patient_id,$consultant_id);
+			if ($this->referred($patient_id,$consultant_id,$department)){
+				$referral_id = $this->referral_id($patient_id,$consultant_id,$department);
 				$this->db->where('referral_id',$referral_id);
 				$this->db->set('referral_consultation',$consultation_id);
 				$this->db->set('referral_status','1');
@@ -84,11 +84,14 @@ class Consultation extends CI_Model
 
 	}
 	
-	function returning($patient_id,$consultant_id=null)
+	function returning($patient_id,$consultant_id=null,$department=null)
 	{
 		$this->db->from('consultation');
 		$this->db->where('patient_id',$patient_id);
-		if($consultant_id)$this->db->where('consultant_id',$consultant_id);
+		if($consultant_id){
+			$this->db->where('consultant_id',$consultant_id);
+			//if($department)$this->db->or_where('consultation_type',$department);
+		}
 		$this->db->where('consultation_status !=','3');
 		$consultation = $this->db->get()->row()->consultation_id;
 		return $consultation;
@@ -100,6 +103,7 @@ class Consultation extends CI_Model
 		
 		$this->db->from('consultation_icd10');
 		$this->db->like("diagnosis_code",$search);
+		$this->db->where("classification !=",'N');
 		$this->db->order_by("diagnosis_code", "asc");		
 		$by_code = $this->db->get();
 		foreach($by_code->result() as $row)
@@ -109,6 +113,7 @@ class Consultation extends CI_Model
 		
 		$this->db->from('consultation_icd10');
 		$this->db->like("description",$search);
+		$this->db->where("classification !=",'N');
 		$this->db->order_by("diagnosis_code", "asc");		
 		$by_name = $this->db->get();
 		foreach($by_name->result() as $row)
@@ -507,14 +512,15 @@ class Consultation extends CI_Model
 		$this->db->where('encounter_type', "$clinic");
 		//$this->db->order_by("priority", "asc");
 		$this->db->order_by("encounter.encounter_id", "asc");
-		$this->db->limit(10);
+		$this->db->limit(30);
 		return $this->db->get()->result_array();
 	}
 	
-	function get_lab_queue($consultant_id)
+	function get_lab_queue($consultant_id,$clinic=null)
 	{
 		$this->db->from('consultation');
 		$this->db->where('consultant_id', $consultant_id);
+		//if($clinic)$this->db->or_where('consultation_type', $clinic);
 		$status = array('101', '102', '111', '121', '122', '112');
 		$this->db->where_in('consultation_status', $status);
 		$this->db->order_by("consultation_status", "desc");
@@ -523,10 +529,11 @@ class Consultation extends CI_Model
 		return $this->db->get()->result_array();
 	}
 	
-	function get_xray_queue($consultant_id)
+	function get_xray_queue($consultant_id,$clinic=null)
 	{
 		$this->db->from('consultation');
 		$this->db->where('consultant_id', $consultant_id);
+		//if($clinic)$this->db->or_where('consultation_type', $clinic);
 		$status = array('110', '120', '111', '121', '122', '112');
 		$this->db->where_in('consultation_status', $status);
 		$this->db->order_by("consultation_status", "desc");
@@ -604,6 +611,10 @@ class Consultation extends CI_Model
 			$this->db->update('encounter', $encounter_data);	
 		}
 		else $this->db->insert('encounter', $encounter_data);
+		
+		$this->db->where('queue_customer_id',$encounter_data['patient_id']);
+		$this->db->delete('admission_queue');
+		
 		$this->db->trans_complete();
 		if ($this->db->trans_status() == FALSE) {
 			return false;
@@ -619,40 +630,34 @@ class Consultation extends CI_Model
 		$this->db->from('consultation_referral');
 		$this->db->join('consultation','consultation.consultation_id=consultation_referral.consultation_id');
 		$this->db->where('referral_status', 0);
-		$this->db->where('referral_doctor', $consultant_id);
-		if($department_id)$this->db->where('referral_department', $department_id);
+		if($department_id)$this->db->where("(referral_doctor = '$consultant_id' OR referral_department ='$department_id')");
+		else $this->db->where("referral_doctor",$consultant_id);
 		$this->db->order_by("referral_id", "asc");
 		$this->db->order_by("consultation_time", "asc");
 		$this->db->limit(5);
 		return $this->db->get()->result_array();
 	}
 	
-	function referred($patient_id,$consultant_id)
+	function referred($patient_id,$consultant_id,$department=null)
 	{
-		$department = $this->get_employee_clinic($consultant_id);
 		$this->db->from('consultation_referral');
 		$this->db->join('consultation','consultation.consultation_id=consultation_referral.consultation_id');
 		$this->db->where('patient_id', $patient_id);
 		$this->db->where('referral_status', 0);
-		$this->db->where('referral_doctor', $consultant_id);
-		if($department){
-			 $this->db->or_where('referral_department', $department); 
-		}
+		if($department_id)$this->db->where("(referral_doctor = '$consultant_id' OR referral_department ='$department_id')");
+		else $this->db->where("referral_doctor",$consultant_id);
 		
 		return $this->db->get()->row()->consultation_id;
 	}
 	
-	function referral_id($patient_id,$consultant_id)
+	function referral_id($patient_id,$consultant_id,$department=null)
 	{
-		$department = $this->get_employee_clinic($consultant_id);
 		$this->db->from('consultation_referral');
 		$this->db->join('consultation','consultation.consultation_id=consultation_referral.consultation_id');
 		$this->db->where('patient_id', $patient_id);
 		$this->db->where('referral_status', 0);
-		$this->db->where('referral_doctor', $consultant_id);
-		if($department){
-			 $this->db->or_where('referral_department', $department); 
-		}
+		if($department_id)$this->db->where("(referral_doctor = '$consultant_id' OR referral_department ='$department_id')");
+		else $this->db->where("referral_doctor",$consultant_id);
 		
 		return $this->db->get()->row()->referral_id;
 	}

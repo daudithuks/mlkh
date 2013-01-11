@@ -26,7 +26,7 @@ echo form_open('employees/save/'.$person_info->person_id,array('id'=>'employee_f
 	<div class='form_field'>
 	<?php 
 	//$dpt="department";
-	echo form_dropdown('department', $department, '1'); ?>
+	echo form_dropdown('department', $departments, $person_info->department_id); ?>
 	</div>
 </div>
 

@@ -77,11 +77,12 @@ class Consultant extends Secure_area {
 		$data['family_history'] = $this->consultant_lib->get_family_history();
 		$data['examination'] = $this->consultant_lib->get_examination();
 		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
+		$data['consultation_id'] = $this->Consultation->returning($customer_id,$consultant_id,$this->session->userdata('clinic'));
 		
 		$status = $this->Consultation->get_status($this->Consultation->returning($customer_id),$consultant_id);
 		if ($status==102 || $status==112 || $status==122) $data['lab_report'] = true;
@@ -89,7 +90,7 @@ class Consultant extends Secure_area {
 		if($this->Consultation->check_invoice($customer_id,"Lab")) $data['lab_request'] = false;
 		if($this->Consultation->check_invoice($customer_id,"X-Ray")) $data['xray_request'] = false;
 		
-		if($this->Consultation->referred($customer_id,$consultant_id)) { $data['referred'] =$this->Consultation->referred($customer_id,$consultant_id); }
+		if($this->Consultation->referred($customer_id,$consultant_id,$this->session->userdata('clinic'))) { $data['referred'] =$this->Consultation->referred($customer_id,$consultant_id,$this->session->userdata('clinic')); }
 		if($this->Consultation->returned_referral($customer_id,$consultant_id)) { $data['returned_referrals'] =$this->Consultation->returned_referral($customer_id,$consultant_id); }
 		
 		if($customer_id!=-1)
@@ -326,11 +327,19 @@ class Consultant extends Secure_area {
 	
 	function refresh_queue()
 	{
+		$customer_id=$this->consultant_lib->get_customer();
+		if($customer_id!=-1)
+		{
+			$cust_info=$this->Customer->get_info($customer_id);
+			
+			$data['customer']=$cust_info->first_name.' '.$cust_info->middle_name.' '.$cust_info->last_name;
+		}
+		
 		$person_info = $this->Employee->get_logged_in_employee_info();
 		
 		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 		
@@ -339,6 +348,14 @@ class Consultant extends Secure_area {
 	
 	function refresh_summary()
 	{
+		$patient_id=$this->consultant_lib->get_customer();
+		$consultant_id = $this->Employee->get_logged_in_employee_info()->person_id;
+		
+		$info=$this->Customer->get_info($patient_id);
+		$person_info = $this->Employee->get_info($consultant_id);
+		$data['customer']=$info->first_name.' '.$info->middle_name.' '.$info->last_name;
+		$data['gender'] = $info->gender;
+		$data['consultant'] = $person_info->first_name.' '.$person_info->middle_name.' '.$person_info->last_name;
 		$data['diagnoses'] = $this->consultant_lib->get_diagnoses();
 		$data['complaints'] = $this->consultant_lib->get_complaints();
 		$data['obst_gyn'] = $this->consultant_lib->get_obst_gyn();
@@ -368,8 +385,8 @@ class Consultant extends Secure_area {
 			$info=$this->Customer->get_info_consultation($customer_id);
 			$person_info = $this->Employee->get_logged_in_employee_info();
 			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -405,6 +422,15 @@ class Consultant extends Secure_area {
 		}
 		
 		$this->lab_request_form($data);
+	}
+
+	function save_description_lab()
+	{
+		$line=$this->input->post("line");
+		$description=$this->input->post("description");
+		$items = $this->consultant_lib->get_lab_cart();
+		$items[$line]['description'] = $description;
+		$this->consultant_lib->set_lab_cart($items);
 	}
 	
 	function delete_lab_item($item_number)
@@ -459,8 +485,8 @@ class Consultant extends Secure_area {
 			$info=$this->Customer->get_info_consultation($customer_id);
 			$person_info = $this->Employee->get_logged_in_employee_info();
 			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -496,6 +522,15 @@ class Consultant extends Secure_area {
 		}
 		
 		$this->xray_request_form($data);
+	}
+
+	function save_description_xray()
+	{
+		$line=$this->input->post("line");
+		$description=$this->input->post("description");
+		$items = $this->consultant_lib->get_xray_cart();
+		$items[$line]['description'] = $description;
+		$this->consultant_lib->set_xray_cart($items);
 	}
 	
 	function delete_xray_item($item_number)
@@ -551,8 +586,8 @@ class Consultant extends Secure_area {
 			$info=$this->Customer->get_info_consultation($customer_id);
 			$person_info = $this->Employee->get_logged_in_employee_info();
 			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -635,8 +670,8 @@ class Consultant extends Secure_area {
 			$info=$this->Customer->get_info_consultation($customer_id);
 			$person_info = $this->Employee->get_logged_in_employee_info();
 			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -666,8 +701,8 @@ class Consultant extends Secure_area {
 			$info=$this->Customer->get_info_consultation($customer_id);
 			$person_info = $this->Employee->get_logged_in_employee_info();
 			$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+			$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+			$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 			$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -758,8 +793,8 @@ class Consultant extends Secure_area {
 		$data['customer_id'] = $patient_id;
 		$person_info = $this->Employee->get_logged_in_employee_info();
 		$data['main_queue'] = $this->Consultation->get_main_queue($this->session->userdata('clinic'));
-		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id);
-		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id);
+		$data['lab_queue'] = $this->Consultation->get_lab_queue($person_info->person_id,$this->session->userdata('clinic'));
+		$data['xray_queue'] = $this->Consultation->get_xray_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['referral_queue'] = $this->Consultation->get_referral_queue($person_info->person_id,$this->session->userdata('clinic'));
 		$data['returned_referral_queue'] = $this->Consultation->get_returned_referral_queue($person_info->person_id);
 			
@@ -833,9 +868,9 @@ class Consultant extends Secure_area {
 	
 	function save_referral()
 	{
-		$doctor = trim($this->input->post('refer_doctor'));
-		$department = trim($this->input->post('refer_department'));
-		$description = trim($this->input->post('refer_description'));
+		$doctor = $this->input->post('refer_doctor');
+		$department = $this->input->post('refer_department');
+		$description = $this->input->post('refer_description');
 		
 		$person_info = $this->Employee->get_logged_in_employee_info();
 		$patient_id=$this->consultant_lib->get_customer();

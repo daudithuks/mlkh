@@ -170,7 +170,7 @@ class Sale_lib
 	{
 		foreach($this->CI->Invoice->get_invoice($customer_id)->result() as $row)
 		{
-			$this->add_item($row->item_id,$row->quantity_purchased,null,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
+			$this->add_item($row->item_id,$row->quantity_purchased,$row->discount_percent,$row->item_unit_price,$row->description,$row->serialnumber,$row->invoice_id);
 		}
 	}
 	
@@ -179,8 +179,8 @@ class Sale_lib
 		$waiver = $this->CI->Waiver->get_waiver($customer_id);
 		if (!empty($waiver))
 		{
-			$payment_type = "Waiver:".$waiver->serial;
-			$payment_amount = $waiver->value;
+			$payment_type = "Waiver:".$waiver->waiver_id;
+			$payment_amount = $waiver->waiver_discount;
 			$this->add_payment($payment_type,$payment_amount);
 		}
 	}

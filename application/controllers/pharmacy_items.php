@@ -44,7 +44,7 @@ class pharmacy_items extends items {
 		echo json_encode($this->Item->find_item_info($item_number));
 	}
 
-	function search_pharm()
+	function search()
 	{
 		$search=$this->input->post('search');
 		$data_rows=get_items_manage_table_data_rows($this->Item->search($search),$this);
@@ -54,7 +54,7 @@ class pharmacy_items extends items {
 	/*
 	Gives search suggestions based on what is being searched for
 	*/
-	function suggest_pharm()
+	function suggest()
 	{
 		$suggestions = $this->Item->get_item_search_suggestions_pharm($this->input->post('q'),$this->input->post('limit'));
 		echo implode("\n",$suggestions);

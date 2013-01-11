@@ -4,14 +4,30 @@ echo form_open('admissions/save_allocation/'.$person_info->person_id,array('id'=
 <div id="required_fields_message"><?php echo $this->lang->line('common_fields_required_message'); ?></div>
 <ul id="error_message_box"></ul>
 <fieldset id="customer_basic_info">
-<legend><?php echo $this->lang->line("customers_basic_information"); ?></legend>
+<legend><?php echo 'Admission Information'; ?></legend>
+
+<div class="field_row clearfix">	
+<?php echo form_label('Patient Number:', 'patient_number'); ?>
+	<div class='form_field'>
+	<?php 
+	echo $this->Appconfig->get('patient_prefix').$person_info->person_id; ?>
+	</div>
+</div>
+
+<div class="field_row clearfix">	
+<?php echo form_label('Patient Name:', 'patient_name'); ?>
+	<div class='form_field'>
+	<?php 
+	echo $person_info->first_name.' '.$person_info->last_name; ?>
+	</div>
+</div>
 
 <div class="field_row clearfix">	
 <?php echo form_label('Outpatient Service:', 'outpatient_service'); ?>
 	<div class='form_field'>
 	<?php 
 	$serv_id="outpatient_service";
-	echo form_dropdown('outpatient_service', $outpatient_service, 'cwc',$serv_id); ?>
+	echo form_dropdown('outpatient_service', $outpatient_service, '',$serv_id); ?>
 	</div>
 </div>
 
@@ -37,7 +53,9 @@ echo form_open('admissions/save_allocation/'.$person_info->person_id,array('id'=
 		'checked'=>'checked'));?>
 	</div>
 </div>
-
+<?php
+echo form_hidden('queue',$queue);
+?>
 <?php
 echo form_submit(array(
 	'name'=>'submit',

@@ -35,7 +35,7 @@ class Dispense extends Secure_area {
 				$customer_id = $this->input->post("customer");
 				$employee_id=$this->Employee->get_logged_in_employee_info()->person_id;
 				$this->dispense_lib->set_customer($customer_id);
-				$this->dispense_lib->get_invoice($customer_id,$employee_id);
+				$this->dispense_lib->get_invoice($customer_id);
 			}
 		}
 		
@@ -45,7 +45,7 @@ class Dispense extends Secure_area {
 			{
 				$employee_id=$this->Employee->get_logged_in_employee_info()->person_id;
 				$this->dispense_lib->set_customer($customer_id);
-				$this->dispense_lib->get_invoice($customer_id,$employee_id);
+				$this->dispense_lib->get_invoice($customer_id);
 			}
 		}
 		$this->_reload();
@@ -80,7 +80,7 @@ class Dispense extends Secure_area {
 		$person_info = $this->Employee->get_logged_in_employee_info();
 		$data['items_module_allowed'] = $this->Employee->has_permission('items', $person_info->person_id);
 		$customer_id=$this->dispense_lib->get_customer();
-		$data['consultation'] = $this->Invoice->get_pharmacy_consultation($customer_id);
+		$data['consultation'] = $this->Invoice->get_pharmacy_consultation($customer_id,'Pharmacy');
 		$data['histories'] = $this->Dispensing_model->get_prescriptions_for_customer($customer_id);
 		//need to get customer data about prescriptions history
 		$data['prescriptions'] = $this->Dispensing_model->get_customer_history($customer_id);

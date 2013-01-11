@@ -368,6 +368,11 @@ if (isset($examination['pelvic_penis_describe'])) echo " (".str_replace("\n", "<
 </tbody></table>
 <?php //} ?>
 
+<?php if(!empty($examination['ent'])){ ?>
+<table><thead><tr><th>ENT</th></tr></thead><tfoot><tr><td>&nbsp;</td></tr></tfoot>
+<tbody><tr><td><?php echo str_replace("\n", "<br />", $examination['ent']); ?></td></tr></tbody></table>
+<?php } ?>
+
 <?php if(!empty($examination['skin'])){ ?>
 <table><thead><tr><th>Skin</th></tr></thead><tfoot><tr><td>&nbsp;</td></tr></tfoot>
 <tbody><tr><td><?php echo str_replace("\n", "<br />", $examination['skin']); ?></td></tr></tbody></table>

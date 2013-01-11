@@ -1,12 +1,12 @@
 <?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 require_once("consultant.php");
-class children_welfare_consultant extends consultant {
+class accident_emergency_consultant extends consultant {
 
 	
 	function __construct()
 	{
 		parent::__construct('accident_emergency_consultant');
-		$this->session->set_userdata('clinic','accident');
+		$this->session->set_userdata('clinic','emergency');
 	}
 
 	function customer_search()

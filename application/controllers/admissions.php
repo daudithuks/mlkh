@@ -20,6 +20,17 @@ class Admissions extends Person_controller
 		$data['manage_table']=get_admissions_manage_table( $this->Customer->get_all_queued( $config['per_page'], $this->uri->segment( $config['uri_segment'] ) ), $this );
 		$this->load->view('admissions/manage',$data);
 	}
+	
+	function refresh()
+	{
+		$admission_queue=$this->input->post('admission_queue');
+		
+		$data['admission_queue']=$admission_queue;
+		$data['controller_name']=strtolower(get_class());
+		$data['form_width']=$this->get_form_width();
+		$data['manage_table']=get_admissions_manage_table( $this->Customer->get_all_queued_filtered($admission_queue),$this);
+		$this->load->view('triage/manage',$data);
+	}
 
 	/*
 	Gets one row for a person manage table. This is called using AJAX to update one row.
@@ -51,9 +62,10 @@ class Admissions extends Person_controller
 	}
 	
 	/*load the alliocation edit form*/
-	function view_allocate($patient_id=-1)
+	function view_allocate($patient_id=-1,$queue=null)
 	{
 		$data['person_info']=$this->Customer->get_info($patient_id);
+		$data['queue'] = $queue;
 		$data['outpatient_service']=$this->Consultation->get_outpatient_services();
 		$this->load->view("admissions/allocate",$data);
 	}
@@ -66,6 +78,7 @@ class Admissions extends Person_controller
 			'patient_id' => $patient_id,
 			'visit_status' =>$this->input->post('visit_status'),
 			'encounter_type' => $this->input->post('outpatient_service'),
+			'encounter_queue' => $this->input->post('queue'),
 			'encounter_status' => $encounter_status);
 		if($this->Consultation->save_allocation($encounter_data))
 		{
@@ -150,14 +163,14 @@ class Admissions extends Person_controller
 	*/
 	function delete()
 	{
-		/*$patients_to_delete=$this->input->post('ids');
+		$patients_to_delete=$this->input->post('ids');
 		
-		if($this->Customer->delete_list($patients_to_delete))
+		if($this->Customer->delete_admissions_list($patients_to_delete))
 		{
 			echo json_encode(array('success'=>true,'message'=>$this->lang->line('patients_successful_deleted').' '.
 			count($patients_to_delete).' '.$this->lang->line('patients_one_or_multiple')));
 		}
-		else*/
+		else
 		{
 			echo json_encode(array('success'=>false,'message'=>$this->lang->line('patients_cannot_be_deleted')));
 		}
